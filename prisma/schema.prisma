@@ -1,0 +1,507 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ENUMS
+enum ProductStatus {
+  PUBLISHED
+  DRAFT
+  ARCHIVED
+
+  @@map("product_status")
+}
+
+enum InventoryTransactionStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+
+  @@map("inventory_transaction_status")
+}
+
+enum DiscountType {
+  NONE
+  PERCENTAGE
+  FIXED_AMOUNT
+
+  @@map("discount_type")
+}
+
+enum OrderStatus {
+  PROCESSING
+  PENDING_PAYMENT
+  PAID
+  PACKED
+  READY_TO_SHIP
+  SHIPPED
+  COMPLETED
+  CANCELLED
+  RETURNED
+  DELIVERED
+
+  @@map("order_status")
+}
+
+enum PaymentMethod {
+  COD
+  BANKING
+
+  @@map("payment_method")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  STAFF
+
+  @@map("user_role")
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  categoryId      String
+  brandId         String
+  countryOriginId String
+
+  code        String   @unique
+  name        String   @default("")
+  description String   @default("")
+  imageUrl    String   @default("")
+  status      ProductStatus @default(PUBLISHED)
+  basePrice   Decimal  @db.Decimal(10, 2)
+  minStockLevel Int
+  maxStockLevel Int
+  views       Int
+
+  category        Category        @relation(fields: [categoryId], references: [id])
+  brand           Brand           @relation(fields: [brandId], references: [id])
+  countryOfOrigin CountryOfOrigin @relation(fields: [countryOriginId], references: [id])
+  attributes      ProductAttribute[]
+  skus            Sku[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([countryOriginId])
+  @@index([status])
+  @@map("Product")
+}
+
+model ProductAttribute {
+  id        String @id @default(uuid())
+  productId String
+
+  name String @default("")
+
+  product Product @relation(fields: [productId], references: [id])
+  skus    ProductAttributeSku[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([productId])
+  @@map("ProductAttribute")
+}
+
+model ProductAttributeSku {
+  id                 String @id @default(uuid())
+  productAttributeId String
+  skuId              String
+
+  value String @default("")
+
+  productAttribute ProductAttribute @relation(fields: [productAttributeId], references: [id])
+  sku              Sku              @relation(fields: [skuId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([productAttributeId])
+  @@index([skuId])
+  @@map("ProductAttributeSku")
+}
+
+model Sku {
+  id String @id @default(uuid())
+
+  productId String
+
+  name         String @default("")
+  code         String @unique
+  barcode      String @unique
+  costPrice    Decimal @db.Decimal(10, 2)
+  sellingPrice Decimal @db.Decimal(10, 2)
+  stockOnHand  Int
+  imageUrl     String @default("")
+
+  product                  Product @relation(fields: [productId], references: [id])
+  attributeValues          ProductAttributeSku[]
+  inboundTransactionItems  InboundTransactionDetail[]
+  outboundTransactionItems OutboundTransactionDetail[]
+  orderDetails             OrderDetail[]
+  cartItems                CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([productId])
+  @@map("Sku")
+}
+
+model Category {
+  id String @id @default(uuid())
+
+  parentCategoryId String?
+  parentCategory   Category? @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  children         Category[] @relation("CategoryHierarchy")
+
+  name     String @default("")
+  slug     String @unique
+  imageUrl String @default("")
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([parentCategoryId])
+  @@map("Category")
+}
+
+model Brand {
+  id String @id @default(uuid())
+
+  name     String @default("")
+  imageUrl String @default("")
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@map("Brand")
+}
+
+model CountryOfOrigin {
+  id String @id @default(uuid())
+
+  name String @default("")
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@map("CountryOfOrigin")
+}
+
+model StockBatch {
+  id String @id @default(uuid())
+
+  code String @unique
+  expirationDate DateTime
+  importingQuantity Int
+
+  inboundDetails  InboundTransactionDetail[]
+  outboundDetails OutboundTransactionDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([expirationDate])
+  @@map("StockBatch")
+}
+
+model InboundTransaction {
+  id String @id @default(uuid())
+
+  supplierId String
+  createById String
+
+  code String @unique
+  status InventoryTransactionStatus @default(DRAFT)
+  totalImportingPrice Decimal @db.Decimal(10, 2)
+  receivedDate DateTime
+  note String @default("")
+
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  createBy User @relation("InboundCreator", fields: [createById], references: [id])
+  details InboundTransactionDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([supplierId])
+  @@index([createById])
+  @@index([status])
+  @@map("InboundTransaction")
+}
+
+model InboundTransactionDetail {
+  id String @id @default(uuid())
+
+  skuId String
+  stockBatchId String
+  inboundTransactionId String
+
+  importingPrice Decimal @db.Decimal(10, 2)
+  sellingPrice Decimal @db.Decimal(10, 2)
+  importingQuantity Int
+  totalImportingPrice Decimal @db.Decimal(10, 2)
+  discountType DiscountType
+  discountValue Decimal @db.Decimal(10, 2)
+  note String @default("")
+
+  sku Sku @relation(fields: [skuId], references: [id])
+  stockBatch StockBatch @relation(fields: [stockBatchId], references: [id])
+  inboundTransaction InboundTransaction @relation(fields: [inboundTransactionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([skuId])
+  @@index([stockBatchId])
+  @@index([inboundTransactionId])
+  @@map("InboundTransactionDetail")
+}
+
+model User {
+  id String @id @default(uuid())
+
+  email String @unique
+  password String @default("")
+  code String @unique
+  fullName String @default("")
+  phoneNumber String @unique
+  avatarUrl String @default("")
+  role UserRole @default(CUSTOMER)
+
+  orders Order[]
+  cart Cart?
+  addresses Address[]
+  refreshTokens RefreshToken[]
+
+  createdInboundTransactions InboundTransaction[] @relation("InboundCreator")
+  createdOutboundTransactions OutboundTransaction[] @relation("OutboundCreator")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([role])
+  @@map("User")
+}
+
+model Cart {
+  id String @id @default(uuid())
+
+  userId String @unique
+  user User @relation(fields: [userId], references: [id])
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@map("Cart")
+}
+
+model CartItem {
+  id String @id @default(uuid())
+
+  skuId String
+  cartId String
+  quantity Int
+
+  sku Sku @relation(fields: [skuId], references: [id])
+  cart Cart @relation(fields: [cartId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([skuId])
+  @@index([cartId])
+  @@map("CartItem")
+}
+
+model Order {
+  id String @id @default(uuid())
+
+  userId String
+
+  code String @unique
+  status OrderStatus @default(PROCESSING)
+  totalPrice Decimal @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @default(COD)
+
+  paidAt DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+  items OrderDetail[]
+
+  shippingInfo ShippingInfo?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@map("Order")
+}
+
+model ShippingInfo {
+  id String @id @default(uuid())
+
+  orderId String @unique
+
+  fullName String @default("")
+  email String @unique
+  phoneNumber String @unique
+
+  province String @default("")
+  district String @default("")
+  ward String @default("")
+  streetAddress String @default("")
+  note String @default("")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@map("ShippingInfo")
+}
+
+model Supplier {
+  id String @id @default(uuid())
+
+  code        String @unique
+  name        String @default("")
+  email       String @unique
+  phoneNumber String @unique
+  address     String @default("")
+  note        String @default("")
+  companyName String @default("")
+  taxCode     String @default("")
+
+  inboundTransactions InboundTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@map("Supplier")
+}
+
+model OutboundTransaction {
+  id String @id @default(uuid())
+
+  createById String
+
+  code String @unique
+  status InventoryTransactionStatus @default(DRAFT)
+  totalImportingPrice Decimal @db.Decimal(10, 2)
+  exportedDate DateTime
+  note String @default("")
+
+  createBy User @relation("OutboundCreator", fields: [createById], references: [id])
+  details OutboundTransactionDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([createById])
+  @@index([status])
+  @@map("OutboundTransaction")
+}
+
+model OutboundTransactionDetail {
+  id String @id @default(uuid())
+
+  skuId String
+  stockBatchId String
+  outboundTransactionId String
+
+  exportingQuantity Int
+  totalImportingPrice Decimal @db.Decimal(10, 2)
+  note String @default("")
+
+  sku Sku @relation(fields: [skuId], references: [id])
+  stockBatch StockBatch @relation(fields: [stockBatchId], references: [id])
+  outboundTransaction OutboundTransaction @relation(fields: [outboundTransactionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([skuId])
+  @@index([stockBatchId])
+  @@index([outboundTransactionId])
+  @@map("OutboundTransactionDetail")
+}
+
+model OrderDetail {
+  id String @id @default(uuid())
+
+  orderId String
+  skuId String
+
+  quantity Int
+  productPrice Decimal @db.Decimal(10, 2)
+
+  order Order @relation(fields: [orderId], references: [id])
+  sku   Sku   @relation(fields: [skuId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([orderId])
+  @@index([skuId])
+  @@map("OrderDetail")
+}
+
+model Address {
+  id String @id @default(uuid())
+
+  userId String
+
+  province String @default("")
+  district String @default("")
+  ward String @default("")
+  streetAddress String @default("")
+  isDefault Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([userId])
+  @@map("Address")
+}
+
+model RefreshToken {
+  id String @id @default(uuid())
+
+  userId String
+
+  token String @unique
+  expireIn Int
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime?
+
+  @@index([userId])
+  @@map("RefreshToken")
+}
