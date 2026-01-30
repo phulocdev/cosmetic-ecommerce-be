@@ -162,12 +162,13 @@ CREATE TABLE "InboundTransactionDetail" (
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL DEFAULT '',
+    "password" TEXT NOT NULL,
     "code" TEXT NOT NULL,
-    "fullName" TEXT NOT NULL DEFAULT '',
-    "phoneNumber" TEXT NOT NULL,
-    "avatarUrl" TEXT NOT NULL DEFAULT '',
-    "role" "user_role" NOT NULL DEFAULT 'CUSTOMER',
+    "fullName" TEXT DEFAULT '',
+    "phoneNumber" TEXT DEFAULT '',
+    "isActive" BOOLEAN DEFAULT true,
+    "avatarUrl" TEXT DEFAULT '',
+    "role" "user_role" DEFAULT 'CUSTOMER',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3),
 
@@ -311,7 +312,9 @@ CREATE TABLE "RefreshToken" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "token" TEXT NOT NULL,
-    "expireIn" INTEGER NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "isRevoked" BOOLEAN NOT NULL DEFAULT false,
+    "replacedByToken" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3),
 
@@ -389,9 +392,6 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_code_key" ON "User"("code");
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_phoneNumber_key" ON "User"("phoneNumber");
 
 -- CreateIndex
 CREATE INDEX "User_role_idx" ON "User"("role");

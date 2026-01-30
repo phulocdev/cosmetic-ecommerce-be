@@ -2,8 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -208,7 +207,7 @@ model CountryOfOrigin {
 model StockBatch {
   id String @id @default(uuid())
 
-  code String @unique
+  code String? @unique
   expirationDate DateTime
   importingQuantity Int
 
@@ -228,7 +227,7 @@ model InboundTransaction {
   supplierId String
   createById String
 
-  code String @unique
+  code String? @unique
   status InventoryTransactionStatus @default(DRAFT)
   totalImportingPrice Decimal @db.Decimal(10, 2)
   receivedDate DateTime
@@ -279,12 +278,13 @@ model User {
   id String @id @default(uuid())
 
   email String @unique
-  password String @default("")
-  code String @unique
-  fullName String @default("")
-  phoneNumber String @unique
-  avatarUrl String @default("")
-  role UserRole @default(CUSTOMER)
+  password String
+  code String? @unique
+  fullName String? @default("") // when has @default here, the value of this filed can be empty string "" -> nullable
+  phoneNumber String? @default("")
+  isActive Boolean? @default(true)
+  avatarUrl String? @default("")
+  role UserRole? @default(CUSTOMER)
 
   orders Order[]
   cart Cart?
@@ -338,7 +338,7 @@ model Order {
 
   userId String
 
-  code String @unique
+  code String? @unique
   status OrderStatus @default(PROCESSING)
   totalPrice Decimal @db.Decimal(10, 2)
   paymentMethod PaymentMethod @default(COD)
@@ -408,7 +408,7 @@ model OutboundTransaction {
 
   createById String
 
-  code String @unique
+  code String? @unique
   status InventoryTransactionStatus @default(DRAFT)
   totalImportingPrice Decimal @db.Decimal(10, 2)
   exportedDate DateTime
@@ -495,7 +495,9 @@ model RefreshToken {
   userId String
 
   token String @unique
-  expireIn Int
+  expiresAt DateTime
+  isRevoked Boolean @default(false)
+  replacedByToken String?
 
   user User @relation(fields: [userId], references: [id])
 
