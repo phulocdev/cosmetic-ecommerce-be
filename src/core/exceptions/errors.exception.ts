@@ -45,7 +45,7 @@ export class UnprocessableEntityError extends HttpException {
       {
         title: 'Unprocessable Entity',
         statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-        message: message || 'Lỗi xác thực dữ liệu',
+        message: message || 'Error related to validation fields',
         errors
       },
       HttpStatus.UNPROCESSABLE_ENTITY

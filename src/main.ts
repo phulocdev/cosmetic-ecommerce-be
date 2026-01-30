@@ -2,13 +2,17 @@ import { VersioningType } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
 import { NestExpressApplication } from '@nestjs/platform-express'
+import { UPLOAD_CONFIG } from 'config/upload.config'
+import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
 import path from 'path'
-import cookieParser from 'cookie-parser'
 import { AppModule } from './app.module'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
+
+  // app.useLogger(new MyLoggerDev())
+
   app.use(helmet())
 
   const configService = app.get(ConfigService)
@@ -22,12 +26,10 @@ async function bootstrap() {
 
   /**
    * First parameter: đường dẫn đến thư mục mà mình muốn serve static
-   * Second parameter: option object -> thêm prefix vào đường dẫn
+   * Second parameter: options -> thêm prefix vào đường dẫn
    * -> khi truy cập vào: my_url/public/{đường dẫn còn lại dẫn đến file}
    */
-  app.useStaticAssets(path.join(__dirname, '../upload'), {
-    prefix: '/public/'
-  })
+  app.useStaticAssets(path.join(__dirname, `../../${UPLOAD_CONFIG.UPLOAD_PATH}`), { prefix: '/public/' })
 
   app.enableCors({ origin: '*' })
 

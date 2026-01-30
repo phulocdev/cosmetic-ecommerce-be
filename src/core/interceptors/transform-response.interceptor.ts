@@ -26,19 +26,21 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
         if (!response) {
           return {
             statusCode,
-            message: 'Không có dữ liệu trả về',
+            message: 'No Content',
             data: []
           }
         }
+
+        // Case: Response with pagination metadata
         if (response.data && response.meta) {
           return {
             statusCode,
-            message: responseMessage ?? 'Gọi API thành công',
+            message: responseMessage ?? 'OK',
             data: response.data,
             meta: response.meta
           }
         }
-        return { statusCode, message: responseMessage ?? 'Gọi API thành công', data: response }
+        return { statusCode, message: responseMessage ?? 'OK', data: response }
       })
     )
   }
