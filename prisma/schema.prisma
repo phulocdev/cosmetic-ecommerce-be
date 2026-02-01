@@ -87,7 +87,7 @@ model Product {
   skus            Sku[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([categoryId])
   @@index([brandId])
@@ -106,7 +106,7 @@ model ProductAttribute {
   skus    ProductAttributeSku[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([productId])
   @@map("ProductAttribute")
@@ -123,7 +123,7 @@ model ProductAttributeSku {
   sku              Sku              @relation(fields: [skuId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([productAttributeId])
   @@index([skuId])
@@ -151,7 +151,7 @@ model Sku {
   cartItems                CartItem[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([productId])
   @@map("Sku")
@@ -171,7 +171,7 @@ model Category {
   products Product[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([parentCategoryId])
   @@map("Category")
@@ -186,7 +186,7 @@ model Brand {
   products Product[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@map("Brand")
 }
@@ -199,7 +199,7 @@ model CountryOfOrigin {
   products Product[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@map("CountryOfOrigin")
 }
@@ -215,7 +215,7 @@ model StockBatch {
   outboundDetails OutboundTransactionDetail[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([expirationDate])
   @@map("StockBatch")
@@ -238,7 +238,7 @@ model InboundTransaction {
   details InboundTransactionDetail[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([supplierId])
   @@index([createById])
@@ -266,7 +266,7 @@ model InboundTransactionDetail {
   inboundTransaction InboundTransaction @relation(fields: [inboundTransactionId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([skuId])
   @@index([stockBatchId])
@@ -290,12 +290,13 @@ model User {
   cart Cart?
   addresses Address[]
   refreshTokens RefreshToken[]
+  passwordResetToken PasswordResetToken?
 
   createdInboundTransactions InboundTransaction[] @relation("InboundCreator")
   createdOutboundTransactions OutboundTransaction[] @relation("OutboundCreator")
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([role])
   @@map("User")
@@ -310,7 +311,7 @@ model Cart {
   items CartItem[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@map("Cart")
 }
@@ -326,7 +327,7 @@ model CartItem {
   cart Cart @relation(fields: [cartId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([skuId])
   @@index([cartId])
@@ -353,7 +354,7 @@ model Order {
   shippingInfo ShippingInfo?
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -378,7 +379,7 @@ model ShippingInfo {
   order Order @relation(fields: [orderId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@map("ShippingInfo")
 }
@@ -398,7 +399,7 @@ model Supplier {
   inboundTransactions InboundTransaction[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@map("Supplier")
 }
@@ -418,7 +419,7 @@ model OutboundTransaction {
   details OutboundTransactionDetail[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([createById])
   @@index([status])
@@ -441,7 +442,7 @@ model OutboundTransactionDetail {
   outboundTransaction OutboundTransaction @relation(fields: [outboundTransactionId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([skuId])
   @@index([stockBatchId])
@@ -462,7 +463,7 @@ model OrderDetail {
   sku   Sku   @relation(fields: [skuId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([orderId])
   @@index([skuId])
@@ -483,7 +484,7 @@ model Address {
   user User @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt
 
   @@index([userId])
   @@map("Address")
@@ -497,13 +498,29 @@ model RefreshToken {
   token String @unique
   expiresAt DateTime
   isRevoked Boolean @default(false)
-  replacedByToken String?
+  // replacedByToken String?
 
   user User @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
-  updatedAt DateTime?
+  updatedAt DateTime? @updatedAt 
 
   @@index([userId])
   @@map("RefreshToken")
+}
+
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String @unique
+  token     String   @unique  
+  
+  // One-To-One relationship with User
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+  @@map("PasswordResetToken")
 }

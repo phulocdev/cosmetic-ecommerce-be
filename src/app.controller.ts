@@ -3,7 +3,9 @@ import { AppService } from 'app.service'
 import { Public } from 'core/decorators/public.decorator'
 @Controller()
 export class AppController {
-  constructor(@Inject() private readonly appService: AppService) {}
+  constructor(
+    @Inject() private readonly appService: AppService // private readonly mailerService: MailerService
+  ) {}
 
   // @Inject('app_service  ')
   // private readonly newAppService: AppService
@@ -11,5 +13,11 @@ export class AppController {
   @Get()
   getHello() {
     return this.appService.getHello()
+  }
+
+  @Public()
+  @Get('test-email')
+  async testEmail() {
+    // await this.mailerService.sendWelcomeEmail('test@example.com', 'Pham Phu Loc')
   }
 }

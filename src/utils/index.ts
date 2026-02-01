@@ -24,17 +24,8 @@ export function isEmptyObject(obj: object) {
   return true
 }
 
-export const generateSkuCode = () => {
-  const randomNumber = Math.floor(100000000 + Math.random() * 900000000)
-  return `SKU${randomNumber}`
-}
-
-export const validateLoginBody = async (email: string, password: string) => {
-  if (!email || !/\S+@\S+\.\S+/.test(email)) {
-    throw new UnprocessableEntityError([{ message: 'Email không hợp lệ', field: 'email' }])
-  }
-
-  if (!password || password.length < 8) {
-    throw new UnprocessableEntityError([{ message: 'Mật khẩu phải có ít nhất  ký tự', field: 'password' }])
-  }
+export function normalizeIp(ip: string): string {
+  if (ip === '::1') return '127.0.0.1'
+  if (ip.startsWith('::ffff:')) return ip.replace('::ffff:', '')
+  return ip
 }
