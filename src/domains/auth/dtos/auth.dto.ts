@@ -1,4 +1,14 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsNotEmpty, Matches, MaxLength, IsJWT } from 'class-validator'
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsNotEmpty,
+  Matches,
+  MaxLength,
+  IsJWT,
+  IsHash
+} from 'class-validator'
 
 export class RegisterDto {
   @IsEmail({}, { message: 'Invalid email format' })
@@ -35,4 +45,38 @@ export class RefreshTokenDto {
   @IsJWT({ message: 'Invalid refresh token format' })
   @IsNotEmpty({ message: 'Refresh token is required' })
   refreshToken: string
+}
+
+export class ChangePasswordDto {
+  @IsString({ message: 'Current password must be a string' })
+  @IsNotEmpty({ message: 'Current password is required' })
+  currentPassword: string
+
+  @MaxLength(50, { message: 'New password must not exceed 50 characters' })
+  @MinLength(8, { message: 'New password must be at least 8 characters long' })
+  @IsString({ message: 'New password must be a string' })
+  @IsNotEmpty({ message: 'New password is required' })
+  newPassword: string
+
+  @IsJWT({ message: 'Invalid refresh token format' })
+  @IsNotEmpty({ message: 'Refresh token is required' })
+  refreshToken: string
+}
+
+export class ForgotPasswordDto {
+  @IsEmail({}, { message: 'Invalid email format' })
+  @IsNotEmpty({ message: 'Email is required' })
+  email: string
+}
+
+export class ResetPasswordDto {
+  @IsHash('sha256', { message: 'Invalid reset token format' })
+  @IsNotEmpty({ message: 'Reset token is required' })
+  resetToken: string
+
+  @MaxLength(50, { message: 'New password must not exceed 50 characters' })
+  @MinLength(8, { message: 'New password must be at least 8 characters long' })
+  @IsString({ message: 'New password must be a string' })
+  @IsNotEmpty({ message: 'New password is required' })
+  newPassword: string
 }

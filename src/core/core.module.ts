@@ -2,6 +2,7 @@ import { Module, ValidationPipe } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { ValidationError } from 'class-validator'
+import { EmailModule } from 'core/email/email.module'
 import { UnprocessableEntityError } from 'core/exceptions/errors.exception'
 import GlobalExceptionFilter from 'core/exceptions/global-exception-filter'
 import { TransformResponseInterceptor } from 'core/interceptors/transform-response.interceptor'
@@ -29,9 +30,15 @@ import { extractErrorMessageFromDto } from 'utils'
         EMAIL_HOST: Joi.string().required(),
         EMAIL_SENDER: Joi.string().required(),
         EMAIL_APP_PASSWORD: Joi.string().required(),
-        EMAIL_PREVIEW: Joi.string().required()
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().port().required(),
+        REDIS_PASSWORD: Joi.string().allow('').optional(),
+        REDIS_DB: Joi.number().optional(),
+        LOGIN_ATTEMPTS_WINDOW_SECONDS: Joi.number().optional(),
+        MAX_LOGIN_ATTEMPTS: Joi.number().optional()
       })
-    })
+    }),
+    EmailModule
   ],
   providers: [
     // { provide: APP_GUARD, useClass: ApiKeyGuard },

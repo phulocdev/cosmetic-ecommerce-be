@@ -113,19 +113,6 @@ declare global {
     updatedAt?: Date
   }
 
-  // export interface User {
-  //   id: string
-  //   email: string
-  //   password: string
-  //   code: string
-  //   fullName: string
-  //   phoneNumber: string
-  //   avatarUrl: string
-  //   role: UserRole
-  //   createdAt: Date
-  //   updatedAt?: Date
-  // }
-
   export interface Cart {
     id: string
     userId: string
@@ -240,14 +227,32 @@ declare global {
     updatedAt?: Date
   }
 
+  export interface User {
+    id: string
+    email: string
+    password: string
+    code: string
+    fullName: string
+    phoneNumber: string
+    isActive: boolean
+    avatarUrl: string
+    role: UserRole
+    createdAt: Date
+    updatedAt: Date | null
+  }
+
   export interface JwtPayload {
     userId: string
     email: string
     role: UserRole
-
-    // jit: string
     iat?: number
     exp?: number
   }
+
+  export interface AccessTokenPayload extends JwtPayload {
+    version: number
+  }
+
+  export interface RefreshTokenPayload extends JwtPayload {}
 }
 export {}
