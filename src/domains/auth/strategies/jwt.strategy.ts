@@ -7,6 +7,7 @@ import { REDIS_CLIENT } from 'database/redis/redis.module'
 import { UsersService } from 'domains/users/users.service'
 import Redis from 'ioredis'
 import { ExtractJwt, Strategy } from 'passport-jwt'
+import { AccessTokenPayload } from 'types'
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -22,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     })
   }
 
-  async validate(payload: AccessTokenPayload) {
+  async validate(payload: AccessTokenPayload): Promise<AccessTokenPayload> {
     // Check if user's token version has been invalidated
     const currentTokenVersion = await this.redis.get(`user:${payload.userId}:access_token_version`)
 

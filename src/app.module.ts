@@ -8,10 +8,12 @@ import { AuthModule } from './domains/auth/auth.module'
 import { UsersModule } from './domains/users/users.module'
 import { BullModule } from '@nestjs/bull'
 import { ConfigService } from '@nestjs/config'
+import { ProductsModule } from './domains/products/products.module'
+import { CategoriesModule } from './domains/categories/categories.module'
 @Module({
   imports: [
     CoreModule,
-    PrismaModule,
+    // PrismaModule,
     AuthModule,
     UsersModule,
     RedisModule,
@@ -25,7 +27,9 @@ import { ConfigService } from '@nestjs/config'
         }
       }),
       inject: [ConfigService]
-    })
+    }),
+    ProductsModule,
+    CategoriesModule
   ],
   controllers: [AppController],
   providers: [AppService]

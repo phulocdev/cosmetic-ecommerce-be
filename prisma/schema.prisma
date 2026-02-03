@@ -66,30 +66,28 @@ enum UserRole {
 
 model Product {
   id              String   @id @default(uuid())
-  categoryId      String
   brandId         String
   countryOriginId String
 
   code        String   @unique
-  name        String   @default("")
-  description String   @default("")
-  imageUrl    String   @default("")
-  status      ProductStatus @default(PUBLISHED)
+  name        String   
+  slug        String   @unique
+  description String?   @default("")
+  
+  status      ProductStatus? @default(PUBLISHED)
   basePrice   Decimal  @db.Decimal(10, 2)
-  minStockLevel Int
-  maxStockLevel Int
-  views       Int
+  views       Int? @default(0)
 
-  category        Category        @relation(fields: [categoryId], references: [id])
-  brand           Brand           @relation(fields: [brandId], references: [id])
-  countryOfOrigin CountryOfOrigin @relation(fields: [countryOriginId], references: [id])
-  attributes      ProductAttribute[]
-  skus            Sku[]
+  categories        ProductCategory[]
+  brand             Brand           @relation(fields: [brandId], references: [id])
+  countryOfOrigin   CountryOfOrigin @relation(fields: [countryOriginId], references: [id])
+  variants          ProductVariant[]
+  attributes        ProductAttribute[]
+  images            ProductImage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@index([categoryId])
   @@index([brandId])
   @@index([countryOriginId])
   @@index([status])
@@ -99,52 +97,57 @@ model Product {
 model ProductAttribute {
   id        String @id @default(uuid())
   productId String
+  attributeId String
 
-  name String @default("")
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
-  product Product @relation(fields: [productId], references: [id])
-  skus    ProductAttributeSku[]
-
+  isRequired  Boolean   @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
 
+  @@unique([productId, attributeId])
   @@index([productId])
   @@map("ProductAttribute")
 }
 
-model ProductAttributeSku {
-  id                 String @id @default(uuid())
-  productAttributeId String
-  skuId              String
+// model ProductAttributeSku {
+//   id                 String @id @default(uuid())
+//   productAttributeId String
+//   skuId              String
 
-  value String @default("")
+//   value String @default("")
 
-  productAttribute ProductAttribute @relation(fields: [productAttributeId], references: [id])
-  sku              Sku              @relation(fields: [skuId], references: [id])
+//   productAttribute ProductAttribute @relation(fields: [productAttributeId], references: [id])
+//   sku              Sku              @relation(fields: [skuId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime? @updatedAt
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime? @updatedAt
 
-  @@index([productAttributeId])
-  @@index([skuId])
-  @@map("ProductAttributeSku")
-}
+//   @@index([productAttributeId])
+//   @@index([skuId])
+//   @@map("ProductAttributeSku")
+// }
 
-model Sku {
+model ProductVariant {
   id String @id @default(uuid())
 
   productId String
 
-  name         String @default("")
-  code         String @unique
+  sku          String @unique
+  name         String
   barcode      String @unique
   costPrice    Decimal @db.Decimal(10, 2)
   sellingPrice Decimal @db.Decimal(10, 2)
-  stockOnHand  Int
+  stockOnHand  Int // inventory quantity
   imageUrl     String @default("")
+  lowStockThreshold Int @default(0)
+  maxStockThreshold Int @default(0)
+  isActive     Boolean @default(true)
 
-  product                  Product @relation(fields: [productId], references: [id])
-  attributeValues          ProductAttributeSku[]
+  product                  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeValues          VariantAttributeValue[]
+  images                   VariantImage[]
   inboundTransactionItems  InboundTransactionDetail[]
   outboundTransactionItems OutboundTransactionDetail[]
   orderDetails             OrderDetail[]
@@ -154,26 +157,45 @@ model Sku {
   updatedAt DateTime? @updatedAt
 
   @@index([productId])
-  @@map("Sku")
+  @@index([sku])
+  @@index([isActive])
+  @@index([stockOnHand])
+  @@index([sellingPrice])
+  @@map("ProductVariant")
 }
 
+
 model Category {
-  id String @id @default(uuid())
-
-  parentCategoryId String?
-  parentCategory   Category? @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
-  children         Category[] @relation("CategoryHierarchy")
-
-  name     String @default("")
-  slug     String @unique
-  imageUrl String @default("")
-
-  products Product[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime? @updatedAt
-
-  @@index([parentCategoryId])
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?   @default("")
+  parentId    String?   
+  
+  // Materialized path for performance
+  path        String    @default("/")
+  depth       Int       @default(0)
+  isActive    Boolean   @default(true)
+  
+  // For sorting within same level
+  // sortOrder   Int       @default(0)
+  
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    ProductCategory[]
+  categoryAttributes  CategoryAttribute[]
+  
+  // SEO fields
+  metaTitle       String?
+  metaDescription String?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([parentId])
+  @@index([path])
+  @@index([slug])
+  @@index([isActive])
   @@map("Category")
 }
 
@@ -249,7 +271,7 @@ model InboundTransaction {
 model InboundTransactionDetail {
   id String @id @default(uuid())
 
-  skuId String
+  productVariantId String
   stockBatchId String
   inboundTransactionId String
 
@@ -261,14 +283,14 @@ model InboundTransactionDetail {
   discountValue Decimal @db.Decimal(10, 2)
   note String @default("")
 
-  sku Sku @relation(fields: [skuId], references: [id])
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
   stockBatch StockBatch @relation(fields: [stockBatchId], references: [id])
   inboundTransaction InboundTransaction @relation(fields: [inboundTransactionId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@index([skuId])
+  @@index([productVariantId])
   @@index([stockBatchId])
   @@index([inboundTransactionId])
   @@map("InboundTransactionDetail")
@@ -319,17 +341,17 @@ model Cart {
 model CartItem {
   id String @id @default(uuid())
 
-  skuId String
+  productVariantId String
   cartId String
   quantity Int
 
-  sku Sku @relation(fields: [skuId], references: [id])
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
   cart Cart @relation(fields: [cartId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@index([skuId])
+  @@index([productVariantId])
   @@index([cartId])
   @@map("CartItem")
 }
@@ -429,7 +451,7 @@ model OutboundTransaction {
 model OutboundTransactionDetail {
   id String @id @default(uuid())
 
-  skuId String
+  productVariantId String
   stockBatchId String
   outboundTransactionId String
 
@@ -437,14 +459,15 @@ model OutboundTransactionDetail {
   totalImportingPrice Decimal @db.Decimal(10, 2)
   note String @default("")
 
-  sku Sku @relation(fields: [skuId], references: [id])
+
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
   stockBatch StockBatch @relation(fields: [stockBatchId], references: [id])
   outboundTransaction OutboundTransaction @relation(fields: [outboundTransactionId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@index([skuId])
+  @@index([productVariantId])
   @@index([stockBatchId])
   @@index([outboundTransactionId])
   @@map("OutboundTransactionDetail")
@@ -454,19 +477,19 @@ model OrderDetail {
   id String @id @default(uuid())
 
   orderId String
-  skuId String
+  productVariantId String
 
   quantity Int
   productPrice Decimal @db.Decimal(10, 2)
 
   order Order @relation(fields: [orderId], references: [id])
-  sku   Sku   @relation(fields: [skuId], references: [id])
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
 
   @@index([orderId])
-  @@index([skuId])
+  @@index([productVariantId])
   @@map("OrderDetail")
 }
 
@@ -523,4 +546,189 @@ model PasswordResetToken {
   @@index([userId])
   @@index([token])
   @@map("PasswordResetToken")
+}
+
+// Junction table for many-to-many relationship between Product and Category
+model ProductCategory {
+  productId   String
+  categoryId  String
+  isPrimary   Boolean   @default(false) // Primary category for breadcrumbs
+  
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@index([productId, isPrimary])
+}
+
+
+// Normalized attribute definitions
+model Attribute {
+  id          String              @id @default(uuid())
+  name        String              @unique // "Color", "Size", "Material"
+  slug        String              @unique
+  type        AttributeType       // COLOR, SIZE, TEXT, NUMBER
+
+  // Filter-specific fields
+  isGlobalFilter  Boolean @default(false) // Show on /collections/all?
+  filterGroup     String? // Group filters: "Specifications", "Features", etc.
+  unit            String? // "cm", "kg", "GB" for range filters
+
+  values      AttributeValue[]
+  products    ProductAttribute[]
+  categoryAttributes  CategoryAttribute[] 
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([slug])
+  @@index([isGlobalFilter])
+  @@map("Attribute")
+}
+
+enum AttributeType {
+  COLOR
+  SIZE
+  TEXT
+  NUMBER
+  BOOLEAN
+}
+
+model AttributeValue {
+  id              String                    @id @default(uuid())
+  attributeId     String
+  attribute       Attribute                 @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value           String                    // "Red", "Large", "Cotton"
+  hexColor        String?                   // For color swatches: "#FF0000"
+  variants        VariantAttributeValue[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@unique([attributeId, value])
+  @@index([attributeId])
+  @@map("AttributeValue")
+}
+
+// Junction table: which variant has which attribute values
+model VariantAttributeValue {
+  id               String          @id @default(uuid())
+  variantId        String
+  attributeValueId String
+
+  variant          ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  attributeValue   AttributeValue  @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, attributeValueId])
+  @@index([variantId])
+  @@index([attributeValueId])
+  @@map("VariantAttributeValue")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  url       String
+  altText   String?
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@map("ProductImage")
+}
+
+model VariantImage {
+  id        String         @id @default(uuid())
+  variantId String
+  url       String
+  altText   String?
+  
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime       @default(now())
+
+  @@index([variantId])
+  @@map("VariantImage")
+}
+
+// (Filter Configuration)
+model CategoryAttribute {
+  id          String    @id @default(uuid())
+  categoryId  String
+  attributeId String
+  
+  displayName     String?    // Override attribute name: "Color" → "Shirt Color"
+  displayOrder    Int     @default(0)     // Order in filter UI
+  filterType      FilterDisplayType @default(CHECKBOX) // CHECKBOX, RADIO, SLIDER, SWATCH
+  
+  // Behavior flags
+  isFilterable    Boolean @default(true)  // Can this be used as a filter?
+  isRequired      Boolean    @default(false)  // For product creation
+
+  // Inheritance: if true, child categories inherit this attribute
+  inheritToChildren Boolean @default(true)
+  
+  // Advanced: Filter grouping
+  filterGroup     String?    // "Specifications", "Style", "Features"
+
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@unique([categoryId, attributeId])
+  @@index([categoryId, isFilterable])
+  @@index([attributeId])
+  @@map("CategoryAttribute")
+}
+
+enum FilterDisplayType {
+  CHECKBOX      // Multi-select
+  RADIO         // Single-select
+  SLIDER        // Range (for numbers/prices)
+  SWATCH        // Color swatches
+  DROPDOWN      // Dropdown select
+  TOGGLE        // Boolean (On Sale, Free Shipping)
+}
+
+// ============================================
+// FILTER CACHE (Performance Layer)
+// ============================================
+model FilterCache {
+  id              String   @id @default(uuid())
+  
+  // Composite key components
+  categoryPath    String   // "/" or "/electronics" or "/electronics/laptops"
+  filterHash      String   // MD5 of active filters (for AND logic)
+  
+  // Cached data structure
+  // {
+  //   "brands": [{"id": "...", "name": "Nike", "count": 45}],
+  //   "attributes": {
+  //     "color": [{"id": "...", "value": "Red", "count": 23}],
+  //     "size": [{"id": "...", "value": "Large", "count": 12}]
+  //   },
+  //   "countries": [...],
+  //   "priceRange": {"min": 10, "max": 500}
+  // }
+  aggregatedData  Json
+  
+  // Metadata
+  productCount    Int      @default(0)
+  variantCount    Int      @default(0)
+  computeTimeMs   Int      @default(0) // Performance monitoring
+  
+  lastComputedAt  DateTime @default(now())
+  expiresAt       DateTime
+  
+  @@unique([categoryPath, filterHash])
+  @@index([categoryPath])
+  @@index([expiresAt])
+  @@index([lastComputedAt])
+  @@map("FilterCache")
 }

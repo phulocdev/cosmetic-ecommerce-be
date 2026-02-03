@@ -1,8 +1,12 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService, TokenExpiredError } from '@nestjs/jwt'
+import * as bcrypt from 'bcrypt'
+import { EmailProducer } from 'core/email/email.producer'
 import { BadRequestError, UnauthorizedError } from 'core/exceptions/errors.exception'
+import crypto from 'crypto'
 import { PrismaService } from 'database/prisma/prisma.service'
+import { REDIS_CLIENT } from 'database/redis/redis.module'
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
@@ -10,13 +14,10 @@ import {
   RegisterDto,
   ResetPasswordDto
 } from 'domains/auth/dtos/auth.dto'
-import * as bcrypt from 'bcrypt'
-import ms from 'ms'
-import { REDIS_CLIENT } from 'database/redis/redis.module'
-import Redis from 'ioredis'
 import { UsersService } from 'domains/users/users.service'
-import crypto from 'crypto'
-import { EmailProducer } from 'core/email/email.producer'
+import Redis from 'ioredis'
+import ms from 'ms'
+import { AccessTokenPayload, RefreshTokenPayload, User } from 'types'
 
 @Injectable()
 export class AuthService {
@@ -147,10 +148,10 @@ export class AuthService {
     if (!tokenRecord) {
       throw new UnauthorizedError('Refresh token not found')
     }
-
-    // Check if revoked RT is used => Remove all RTs of the user
+    // Check if revoked RT is used
     if (tokenRecord.isRevoked) {
-      await this.cleanAllUserTokens(tokenRecord.userId)
+      // Remove all RTs of the user and increase token version to invalidate all existing ATs
+      await Promise.all([this.cleanAllUserTokens(tokenRecord.userId), this.increaseTokenVersion(tokenRecord.userId)])
       throw new UnauthorizedError('Invalid refresh token')
     }
 
@@ -160,10 +161,10 @@ export class AuthService {
     }
 
     // Verify RT signature and expiration by using async verify function
-    let decodedRefreshToken: JwtPayload | undefined
+    let decodedRefreshToken: RefreshTokenPayload | undefined
 
     try {
-      decodedRefreshToken = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
+      decodedRefreshToken = await this.jwtService.verifyAsync<RefreshTokenPayload>(refreshToken, {
         secret: this.configService.get('JWT_REFRESH_SECRET')
       })
     } catch (error) {
@@ -225,8 +226,8 @@ export class AuthService {
     return { message: 'Logged out successfully' }
   }
 
-  async changePassword(jwtPayload: JwtPayload, changePasswordDto: ChangePasswordDto) {
-    const user = await this.usersService.findOne(jwtPayload.userId)
+  async changePassword(accessTokenPayload: AccessTokenPayload, changePasswordDto: ChangePasswordDto) {
+    const user = await this.usersService.findOne(accessTokenPayload.userId)
 
     // Check if current password is correct
     const isCurrentPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password)
@@ -245,19 +246,19 @@ export class AuthService {
     await this.prismaService.$transaction(async (prisma) => {
       // Update user's password
       await prisma.user.update({
-        where: { id: jwtPayload.userId },
+        where: { id: accessTokenPayload.userId },
         data: { password: hashedNewPassword }
       })
 
       // Remove all existing refresh tokens
-      await this.cleanAllUserTokens(jwtPayload.userId)
+      await this.cleanAllUserTokens(accessTokenPayload.userId)
     })
 
     // Increase token version to invalidate all existing access tokens
-    const newTokenVersion = await this.increaseTokenVersion(jwtPayload.userId)
+    const newTokenVersion = await this.increaseTokenVersion(accessTokenPayload.userId)
 
     // Generate new tokens
-    const accessTokenPayload: AccessTokenPayload = {
+    const newAccessTokenPayload: AccessTokenPayload = {
       userId: user.id,
       email: user.email,
       role: user.role,
@@ -265,7 +266,7 @@ export class AuthService {
     }
     const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role }
     const [accessToken, refreshToken] = await Promise.all([
-      this.signAccessToken(accessTokenPayload),
+      this.signAccessToken(newAccessTokenPayload),
       this.signRefreshToken(refreshTokenPayload)
     ])
 
