@@ -91,3 +91,16 @@ export class ForbiddenError extends HttpException {
     )
   }
 }
+
+export class ConflictError extends HttpException {
+  constructor(message: string) {
+    super(
+      {
+        title: 'Conflict',
+        statusCode: HttpStatus.CONFLICT,
+        message
+      },
+      HttpStatus.CONFLICT
+    )
+  }
+}

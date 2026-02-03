@@ -12,6 +12,7 @@ import {
   RegisterDto,
   ResetPasswordDto
 } from 'domains/auth/dtos/auth.dto'
+import { AccessTokenPayload } from 'types'
 import { normalizeIp } from 'utils'
 
 @Controller('auth')

@@ -10,7 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     const adapter = new PrismaPg({
       connectionString: configService.get<string>('DATABASE_URL')
     })
-    super({ adapter })
+    super({ adapter, log: ['query', 'info', 'warn', 'error'] })
   }
 
   async onModuleInit() {
