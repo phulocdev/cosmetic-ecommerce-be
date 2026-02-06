@@ -15,6 +15,9 @@ async function bootstrap() {
 
   app.use(helmet())
 
+  // Enable Express “extended” query parser
+  app.set('query parser', 'extended')
+
   const configService = app.get(ConfigService)
   const port = configService.get<number>('PORT')
 

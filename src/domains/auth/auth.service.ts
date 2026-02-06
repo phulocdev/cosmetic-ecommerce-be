@@ -15,6 +15,7 @@ import {
   ResetPasswordDto
 } from 'domains/auth/dtos/auth.dto'
 import { UsersService } from 'domains/users/users.service'
+import { UserRole } from 'enums'
 import Redis from 'ioredis'
 import ms from 'ms'
 import { AccessTokenPayload, RefreshTokenPayload, User } from 'types'
@@ -71,10 +72,10 @@ export class AuthService {
     const accessTokenPayload: AccessTokenPayload = {
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as UserRole,
       version: tokenVersion
     }
-    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role }
+    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role as UserRole }
 
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(accessTokenPayload),
@@ -83,7 +84,7 @@ export class AuthService {
 
     await this.createRefreshTokenRecord(user.id, refreshToken)
 
-    return { user: this.sanitizeUser(user), accessToken, refreshToken }
+    return { user: this.sanitizeUser({ ...user, role: user.role as UserRole }), accessToken, refreshToken }
   }
 
   async login(loginDto: LoginDto, ipAddress?: string) {
@@ -124,10 +125,10 @@ export class AuthService {
     const accessTokenPayload: AccessTokenPayload = {
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as UserRole,
       version: +tokenVersion
     }
-    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role }
+    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role as UserRole }
 
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(accessTokenPayload),
@@ -136,7 +137,7 @@ export class AuthService {
 
     await this.createRefreshTokenRecord(user.id, refreshToken)
 
-    return { user: this.sanitizeUser(user), accessToken, refreshToken }
+    return { user: this.sanitizeUser({ ...user, role: user.role as UserRole }), accessToken, refreshToken }
   }
 
   async refreshTokens(refreshToken: string) {
@@ -191,13 +192,13 @@ export class AuthService {
     const accessTokenPayload: AccessTokenPayload = {
       userId: tokenRecord.user.id,
       email: tokenRecord.user.email,
-      role: tokenRecord.user.role,
+      role: tokenRecord.user.role as UserRole,
       version: tokenVersion
     }
     const refreshTokenPayload: RefreshTokenPayload = {
       userId: tokenRecord.user.id,
       email: tokenRecord.user.email,
-      role: tokenRecord.user.role
+      role: tokenRecord.user.role as UserRole
     }
 
     const [accessToken, newRefreshToken] = await Promise.all([
@@ -211,7 +212,11 @@ export class AuthService {
       this.revokeRefreshToken(refreshToken)
     ])
 
-    return { user: this.sanitizeUser(tokenRecord.user), accessToken, refreshToken: newRefreshToken }
+    return {
+      user: this.sanitizeUser({ ...tokenRecord.user, role: tokenRecord.user.role as UserRole }),
+      accessToken,
+      refreshToken: newRefreshToken
+    }
   }
 
   async logout(accessTokenPayload: AccessTokenPayload, refreshToken: string) {
@@ -261,10 +266,10 @@ export class AuthService {
     const newAccessTokenPayload: AccessTokenPayload = {
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as UserRole,
       version: newTokenVersion
     }
-    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role }
+    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role as UserRole }
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(newAccessTokenPayload),
       this.signRefreshToken(refreshTokenPayload)

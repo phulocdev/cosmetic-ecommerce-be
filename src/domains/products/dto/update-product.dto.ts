@@ -15,7 +15,7 @@ import {
 } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { ProductStatus } from '@prisma/client'
+import { ProductStatus } from 'enums'
 
 /**
  * DTO for updating product images

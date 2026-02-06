@@ -2,9 +2,23 @@ import { Module } from '@nestjs/common'
 import { ProductsService } from './products.service'
 import { ProductsController } from './products.controller'
 import { PrismaService } from 'database/prisma/prisma.service'
+import { ProductSeedService } from 'domains/products/product-seed.service'
+import { ValidateDtoService } from 'domains/products/validate-dto.service'
+import { InvalidateFilterCacheService } from 'domains/products/invalidate-filter-cache.service'
+import { UpdateProductService } from 'domains/products/update-product.service'
+import { FindAllProductService } from 'domains/products/find-all-product.service'
 
 @Module({
   controllers: [ProductsController],
-  providers: [ProductsService, PrismaService]
+  providers: [
+    ProductsService,
+    PrismaService,
+    ProductSeedService,
+    ValidateDtoService,
+    InvalidateFilterCacheService,
+    UpdateProductService,
+    FindAllProductService
+  ],
+  exports: [ProductsService]
 })
 export class ProductsModule {}

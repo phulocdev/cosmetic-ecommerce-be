@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { ProductStatus } from '@prisma/client'
 import { Type } from 'class-transformer'
 import {
   ArrayMinSize,
@@ -18,6 +17,7 @@ import {
   MinLength,
   ValidateNested
 } from 'class-validator'
+import { ProductStatus } from 'enums'
 
 /**
  * DTO for creating product images

@@ -332,10 +332,12 @@ export class CategoriesService {
 
     return {
       data,
-      totalItems,
-      currentPage: page,
-      limit,
-      totalPages: Math.ceil(totalItems / limit)
+      meta: {
+        total: totalItems,
+        page,
+        limit,
+        totalPages: Math.ceil(totalItems / limit)
+      }
     }
   }
 
@@ -630,9 +632,14 @@ export class CategoriesService {
       throw new BadRequestError('Cannot delete category with products. Move products to another category first.')
     }
 
+    // Check if already deleted
+    if (category.isDeleted) {
+      throw new BadRequestError('Category is already deleted')
+    }
+
     return this.prismaService.category.update({
       where: { id },
-      data: { isActive: false }
+      data: { isDeleted: true, deletedAt: new Date() }
     })
   }
 
