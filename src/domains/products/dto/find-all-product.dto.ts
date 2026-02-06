@@ -11,11 +11,15 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   Min
 } from 'class-validator'
-import { PaginationType, ProductSortBy, ProductStatus, SortOrder } from 'enums'
-import { PaginatedResponse } from 'types'
+import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto, PaginationQueryDto } from 'core/dto/pagination.dto'
+import { ProductSortBy, ProductStatus, SortOrder } from 'enums'
+import { Product } from '@prisma/client'
+
+/**
+ * Request DTOs
+ */
 
 /**
  * Price range filter
@@ -58,7 +62,7 @@ export class StockRangeDto {
 /**
  * Base query parameters for product filtering
  */
-export class ProductFilterDto {
+export class ProductQueryDto extends PaginationQueryDto {
   // Text search
   @ApiPropertyOptional({
     example: 'cotton shirt',
@@ -74,7 +78,9 @@ export class ProductFilterDto {
     enumName: 'ProductStatus',
     example: ProductStatus.PUBLISHED
   })
-  @IsEnum(ProductStatus, { message: 'Status must be a valid ProductStatus' })
+  @IsEnum(ProductStatus, {
+    message: `Status must be a valid ProductStatus: ${Object.values(ProductStatus).join(', ')}`
+  })
   @IsOptional()
   status?: ProductStatus
 
@@ -256,7 +262,9 @@ export class ProductFilterDto {
     example: ProductSortBy.CREATED_AT,
     default: ProductSortBy.CREATED_AT
   })
-  @IsEnum(ProductSortBy, { message: 'Sort by must be a valid ProductSortBy' })
+  @IsEnum(ProductSortBy, {
+    message: `Sort by must be a valid ProductSortBy: ${Object.values(ProductSortBy).join(', ')}`
+  })
   @IsOptional()
   sortBy?: ProductSortBy = ProductSortBy.CREATED_AT
 
@@ -266,7 +274,7 @@ export class ProductFilterDto {
     example: SortOrder.DESC,
     default: SortOrder.DESC
   })
-  @IsEnum(SortOrder, { message: 'Sort order must be a valid SortOrder' })
+  @IsEnum(SortOrder, { message: `Sort order must be a valid SortOrder: ${Object.values(SortOrder).join(', ')}` })
   @IsOptional()
   sortOrder?: SortOrder = SortOrder.DESC
 
@@ -323,135 +331,66 @@ export class ProductFilterDto {
 }
 
 /**
- * Offset-based pagination DTO
- */
-export class OffsetPaginationDto extends ProductFilterDto {
-  @ApiPropertyOptional({
-    example: 1,
-    description: 'Page number (1-indexed)',
-    default: 1,
-    minimum: 1
-  })
-  @IsInt({ message: 'Page must be an integer' })
-  @Min(1, { message: 'Page must be at least 1' })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number = 1
-
-  @ApiPropertyOptional({
-    example: 20,
-    description: 'Number of items per page',
-    default: 20,
-    minimum: 1,
-    maximum: 100
-  })
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  @Max(100, { message: 'Limit must be at most 100' })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number = 20
-}
-
-/**
- * Cursor-based pagination DTO
- */
-export class CursorPaginationDto extends ProductFilterDto {
-  @ApiPropertyOptional({
-    example: 'eyJpZCI6ImFiYzEyMyIsImNyZWF0ZWRBdCI6IjIwMjQtMDEtMDF9',
-    description: 'Cursor for pagination (base64 encoded)'
-  })
-  @IsString({ message: 'Cursor must be a string' })
-  @IsOptional()
-  cursor?: string
-
-  @ApiPropertyOptional({
-    example: 20,
-    description: 'Number of items to return',
-    default: 20,
-    minimum: 1,
-    maximum: 100
-  })
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  @Max(100, { message: 'Limit must be at most 100' })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number = 20
-
-  @ApiPropertyOptional({
-    enum: SortOrder,
-    description: 'Direction to paginate (forward or backward)',
-    example: SortOrder.DESC,
-    default: SortOrder.DESC
-  })
-  @IsEnum(SortOrder, { message: 'Direction must be a valid SortOrder' })
-  @IsOptional()
-  direction?: SortOrder = SortOrder.DESC
-}
-
-/**
- * Unified pagination DTO (accepts both strategies)
- */
-export class ProductQueryDto extends ProductFilterDto {
-  // Pagination type
-  @ApiPropertyOptional({
-    enum: PaginationType,
-    enumName: 'PaginationType',
-    example: PaginationType.OFFSET,
-    default: PaginationType.OFFSET,
-    description: 'Pagination strategy to use'
-  })
-  @IsEnum(PaginationType, {
-    message: `Pagination type must be a valid PaginationType ${Object.values(PaginationType).join(', ')}`
-  })
-  @IsOptional()
-  paginationType?: PaginationType = PaginationType.OFFSET
-
-  // Offset pagination
-  @ApiPropertyOptional({
-    example: 1,
-    description: 'Page number for offset pagination',
-    minimum: 1
-  })
-  @IsInt({ message: 'Page must be an integer' })
-  @Min(1, { message: 'Page must be at least 1' })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number
-
-  // Limit will be used in both pagination types: offset and cursor
-  @ApiPropertyOptional({
-    example: 20,
-    description: 'Items per page',
-    default: 20,
-    minimum: 1,
-    maximum: 100
-  })
-  @IsInt({ message: 'Limit must be an integer' })
-  @Min(1, { message: 'Limit must be at least 1' })
-  @Max(100, { message: 'Limit must be at most 100' })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number = 20
-
-  // Cursor pagination
-  @ApiPropertyOptional({
-    example: 'eyJpZCI6ImFiYzEyMyIsImNyZWF0ZWRBdCI6IjIwMjQtMDEtMDF9',
-    description: 'Cursor for cursor-based pagination'
-  })
-  @IsString({ message: 'Cursor must be a string' })
-  @IsOptional()
-  cursor?: string
-}
-
-/**
  * Response DTOs
  */
 
-export class ProductListResponseDto extends PaginatedResponse<any> {
-  filters?: {
-    applied: Record<string, any>
-    available?: Record<string, any>
+export class ProductFiltersAppliedDto {
+  @ApiPropertyOptional({
+    description: 'Applied filters',
+    type: 'object',
+    example: { status: 'PUBLISHED', brandIds: ['brand-1', 'brand-2'] },
+    additionalProperties: { type: 'string' }
+  })
+  applied: Record<string, any>
+
+  @ApiPropertyOptional({
+    description: 'Available filters with counts',
+    type: 'object',
+    example: { status: { PUBLISHED: 120, DRAFT: 30 }, brandIds: { 'brand-1': 80, 'brand-2': 70 } },
+    additionalProperties: { type: 'object' }
+  })
+  available?: Record<string, any>
+}
+
+export class OffsetPaginatedProductListResponse extends OffsetPaginatedResponseDto<Product> {
+  filters?: ProductFiltersAppliedDto
+
+  constructor({
+    items,
+    total,
+    page,
+    limit,
+    filters
+  }: {
+    items: Product[]
+    total: number
+    page: number
+    limit: number
+    filters?: ProductFiltersAppliedDto
+  }) {
+    super({ items, total, page, limit })
+    this.filters = filters
+  }
+}
+
+export class CursorPaginatedProductListResponse extends CursorPaginatedResponseDto<Product> {
+  filters?: ProductFiltersAppliedDto
+  constructor({
+    items,
+    nextCursor,
+    previousCursor,
+    hasNextPage,
+    hasPreviousPage,
+    filters
+  }: {
+    items: Product[]
+    nextCursor: string | null
+    previousCursor: string | null
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+    filters?: ProductFiltersAppliedDto
+  }) {
+    super({ items, nextCursor, previousCursor, hasNextPage, hasPreviousPage })
+    this.filters = filters
   }
 }

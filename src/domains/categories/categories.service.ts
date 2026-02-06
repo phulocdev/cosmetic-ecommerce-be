@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { BadRequestError, ConflictError, NotFoundError } from 'core/exceptions/errors.exception'
 import { PrismaService } from 'database/prisma/prisma.service'
 import {
   CategoryTreeFormat,
@@ -11,12 +15,12 @@ import {
 import {
   BreadcrumbItem,
   CategoryEntity,
-  CategoryTreeNode,
-  PaginatedCategoriesResponse
+  CategoryTreeNode
 } from 'domains/categories/entities/category.entity'
 import slugify from 'slugify'
 import { CreateCategoryDto } from './dto/create-category.dto'
 import { UpdateCategoryDto } from './dto/update-category.dto'
+import { OffsetPaginatedResponseDto } from 'core'
 
 @Injectable()
 export class CategoriesService {
@@ -41,7 +45,7 @@ export class CategoriesService {
       })
 
       if (!root) {
-        throw new NotFoundError(`Root category with ID "${rootId}" not found`)
+        throw new NotFoundException(`Root category with ID "${rootId}" not found`)
       }
 
       // Just need either the root OR its descendants
@@ -95,17 +99,17 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with ID "${id}" not found`)
+      throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
     if (category.depth === 0) {
       return [
-        {
+        new BreadcrumbItem({
           id: category.id,
           name: category.name,
           slug: category.slug,
           path: category.path
-        }
+        })
       ]
     }
 
@@ -119,26 +123,35 @@ export class CategoriesService {
       orderBy: { depth: 'asc' }
     })
 
-    const breadcrumbs: BreadcrumbItem[] = parents.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      path: cat.path
-    }))
+    const breadcrumbs: BreadcrumbItem[] = parents.map(
+      (cat) =>
+        new BreadcrumbItem({
+          id: cat.id,
+          name: cat.name,
+          slug: cat.slug,
+          path: cat.path
+        })
+    )
 
     // Add current category
-    breadcrumbs.push({
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      path: category.path
-    })
+    breadcrumbs.push(
+      new BreadcrumbItem({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        path: category.path
+      })
+    )
 
     return breadcrumbs
   }
 
   // Build nested tree structure from flat array
-  private buildTree(categories: CategoryEntity[], rootId?: string, includeProductCount = false): CategoryTreeNode[] {
+  private buildTree(
+    categories: CategoryEntity[],
+    rootId?: string,
+    includeProductCount = false
+  ): CategoryTreeNode[] {
     const categoryMap = new Map<string, CategoryTreeNode>()
     const rootCategories: CategoryTreeNode[] = []
 
@@ -203,13 +216,13 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with slug "${slug}" not found`)
+      throw new NotFoundException(`Category with slug "${slug}" not found`)
     }
 
-    return {
+    return new CategoryEntity({
       ...category,
       productCount: includeProductCount ? (category as any)._count?.products : undefined
-    } as CategoryEntity
+    })
   }
 
   /**
@@ -227,7 +240,7 @@ export class CategoriesService {
     })
 
     if (existingSlug) {
-      throw new ConflictError(`Category with slug "${finalSlug}" already exists`)
+      throw new ConflictException(`Category with slug "${finalSlug}" already exists`)
     }
 
     // Calculate path and depth
@@ -240,11 +253,11 @@ export class CategoriesService {
       })
 
       if (!parent) {
-        throw new NotFoundError(`Parent category with ID "${parentId}" not found`)
+        throw new NotFoundException(`Parent category with ID "${parentId}" not found`)
       }
 
       if (!parent.isActive) {
-        throw new BadRequestError('Cannot create category under inactive parent')
+        throw new BadRequestException('Cannot create category under inactive parent')
       }
 
       path = `${parent.path}${parent.id}/`
@@ -262,14 +275,23 @@ export class CategoriesService {
       }
     })
 
-    return category
+    return new CategoryEntity(category)
   }
 
   /**
    * Get paginated categories with filters
    */
-  async findAll(query: GetCategoriesQueryDto): Promise<PaginatedCategoriesResponse> {
-    const { page = 1, limit = 20, search, parentId, isActive, depth, includeChildren, includeProductCount } = query
+  async findAll(query: GetCategoriesQueryDto): Promise<OffsetPaginatedResponseDto<CategoryEntity>> {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      parentId,
+      isActive,
+      depth,
+      includeChildren,
+      includeProductCount
+    } = query
 
     const skip = (page - 1) * limit
 
@@ -324,27 +346,28 @@ export class CategoriesService {
     ])
 
     // Transform data
-    const data = categories.map((cat: any) => ({
+    const categoryItems = categories.map((cat: any) => ({
       ...cat,
       productCount: includeProductCount ? cat._count?.products : undefined,
       _count: undefined
     }))
 
-    return {
-      data,
-      meta: {
-        total: totalItems,
-        page,
-        limit,
-        totalPages: Math.ceil(totalItems / limit)
-      }
-    }
+    return new OffsetPaginatedResponseDto<CategoryEntity>({
+      items: categoryItems,
+      limit,
+      page,
+      total: totalItems
+    })
   }
 
   /**
    * Get single category by ID
    */
-  async findOne(id: string, includeChildren = false, includeProductCount = false): Promise<CategoryEntity> {
+  async findOne(
+    id: string,
+    includeChildren = false,
+    includeProductCount = false
+  ): Promise<CategoryEntity> {
     const include: Prisma.CategoryInclude = {}
 
     if (includeChildren) {
@@ -365,7 +388,7 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with ID "${id}" not found`)
+      throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
     return {
@@ -383,7 +406,7 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with ID "${id}" not found`)
+      throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
     // Get all descendants
@@ -495,7 +518,7 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with ID "${id}" not found`)
+      throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
     // Check slug uniqueness if updating slug
@@ -505,13 +528,13 @@ export class CategoriesService {
       })
 
       if (existingSlug) {
-        throw new ConflictError(`Category with slug "${updateCategoryDto.slug}" already exists`)
+        throw new ConflictException(`Category with slug "${updateCategoryDto.slug}" already exists`)
       }
     }
 
     // Prevent setting self as parent
     if (updateCategoryDto.parentId === id) {
-      throw new BadRequestError('Category cannot be its own parent')
+      throw new BadRequestException('Category cannot be its own parent')
     }
 
     // Handle parent change
@@ -537,14 +560,14 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with ID "${id}" not found`)
+      throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
     const { newParentId } = moveDto
 
     // Prevent setting self as parent
     if (newParentId === id) {
-      throw new BadRequestError('Category cannot be its own parent')
+      throw new BadRequestException('Category cannot be its own parent')
     }
 
     // Validate new parent
@@ -557,12 +580,12 @@ export class CategoriesService {
       })
 
       if (!newParent) {
-        throw new NotFoundError(`Parent category with ID "${newParentId}" not found`)
+        throw new NotFoundException(`Parent category with ID "${newParentId}" not found`)
       }
 
       // Prevent circular reference
       if (newParent.path.includes(`/${id}/`)) {
-        throw new BadRequestError('Cannot move category to its own descendant')
+        throw new BadRequestException('Cannot move category to its own descendant')
       }
 
       newPath = `${newParent.path}${newParent.id}/`
@@ -621,20 +644,24 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with ID "${id}" not found`)
+      throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
     if (category.children.length > 0) {
-      throw new BadRequestError('Cannot delete category with children. Delete or move children first.')
+      throw new BadRequestException(
+        'Cannot delete category with children. Delete or move children first.'
+      )
     }
 
     if (category.products.length > 0) {
-      throw new BadRequestError('Cannot delete category with products. Move products to another category first.')
+      throw new BadRequestException(
+        'Cannot delete category with products. Move products to another category first.'
+      )
     }
 
     // Check if already deleted
     if (category.isDeleted) {
-      throw new BadRequestError('Category is already deleted')
+      throw new BadRequestException('Category is already deleted')
     }
 
     return this.prismaService.category.update({
@@ -656,15 +683,19 @@ export class CategoriesService {
     })
 
     if (!category) {
-      throw new NotFoundError(`Category with ID "${id}" not found`)
+      throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
     if (category.children.length > 0) {
-      throw new BadRequestError('Cannot delete category with children. Delete or move children first.')
+      throw new BadRequestException(
+        'Cannot delete category with children. Delete or move children first.'
+      )
     }
 
     if (category.products.length > 0) {
-      throw new BadRequestError('Cannot delete category with products. Move products to another category first.')
+      throw new BadRequestException(
+        'Cannot delete category with products. Move products to another category first.'
+      )
     }
 
     return this.prismaService.category.delete({

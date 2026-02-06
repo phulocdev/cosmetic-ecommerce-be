@@ -4,9 +4,9 @@ import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as path from 'path'
 import { BullModule } from '@nestjs/bull'
-import { EmailProcessor } from 'core/email/email.processor'
-import { EmailProducer } from 'core/email/email.producer'
-import { EmailService } from 'core/email/email.service'
+import { EmailProcessor } from 'domains/email/email.processor'
+import { EmailProducer } from 'domains/email/email.producer'
+import { EmailService } from 'domains/email/email.service'
 
 @Module({
   imports: [

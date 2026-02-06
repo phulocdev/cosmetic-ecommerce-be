@@ -1,12 +1,27 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query
+} from '@nestjs/common'
+import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger'
+import { ResponseMessage } from 'core'
+import { Public } from 'core/decorators/public.decorator'
+import {
+  CursorPaginatedProductListResponse,
+  OffsetPaginatedProductListResponse,
+  ProductQueryDto
+} from 'domains/products/dto/find-all-product.dto'
+import { ProductSeedService } from 'domains/products/product-seed.service'
 import { ProductsService } from 'domains/products/products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
-import { Public } from 'core/decorators/public.decorator'
-import { ProductSeedService } from 'domains/products/product-seed.service'
-import { ProductListResponseDto, ProductQueryDto } from 'domains/products/dto/find-all-product.dto'
-import { PaginationType, ProductSortBy, ProductStatus, SortOrder } from 'enums'
 
 @Controller('products')
 export class ProductsController {
@@ -83,7 +98,8 @@ export class ProductsController {
     schema: {
       example: {
         statusCode: 400,
-        message: 'Product with code PROD-002 already exists; Duplicate SKUs found in variant updates',
+        message:
+          'Product with code PROD-002 already exists; Duplicate SKUs found in variant updates',
         error: 'Bad Request'
       }
     }
@@ -106,7 +122,8 @@ export class ProductsController {
   @Get('seed')
   @Public()
   seed() {
-    return this.productSeedService.seedProducts()
+    return { message: 'Seeding endpoint is disabled' }
+    // return this.productSeedService.seedProducts()
   }
 
   @Public()
@@ -115,40 +132,13 @@ export class ProductsController {
     return this.productsService.findById(id)
   }
 
+  @Public()
+  @ResponseMessage('Products retrieved successfully')
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all products with filtering and pagination'
   })
-  @ApiQuery({ name: 'paginationType', enum: PaginationType, required: false })
-  @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
-  @ApiQuery({ name: 'limit', type: Number, required: false, example: 20 })
-  @ApiQuery({ name: 'cursor', type: String, required: false })
-  @ApiQuery({ name: 'search', type: String, required: false })
-  @ApiQuery({ name: 'status', enum: ProductStatus, required: false })
-  @ApiQuery({ name: 'categoryIds', type: [String], required: false })
-  @ApiQuery({ name: 'categorySlug', type: String, required: false })
-  @ApiQuery({ name: 'categoryPath', type: String, required: false })
-  @ApiQuery({ name: 'brandIds', type: [String], required: false })
-  @ApiQuery({ name: 'countryIds', type: [String], required: false })
-  @ApiQuery({ name: 'minPrice', type: Number, required: false })
-  @ApiQuery({ name: 'maxPrice', type: Number, required: false })
-  @ApiQuery({ name: 'inStock', type: Boolean, required: false })
-  @ApiQuery({ name: 'minStock', type: Number, required: false })
-  @ApiQuery({ name: 'maxStock', type: Number, required: false })
-  @ApiQuery({ name: 'hasActiveVariants', type: Boolean, required: false })
-  @ApiQuery({ name: 'minVariantPrice', type: Number, required: false })
-  @ApiQuery({ name: 'maxVariantPrice', type: Number, required: false })
-  @ApiQuery({ name: 'sku', type: String, required: false })
-  @ApiQuery({ name: 'createdAfter', type: Date, required: false })
-  @ApiQuery({ name: 'createdBefore', type: Date, required: false })
-  @ApiQuery({ name: 'sortBy', enum: ProductSortBy, required: false })
-  @ApiQuery({ name: 'sortOrder', enum: SortOrder, required: false })
-  @ApiQuery({ name: 'includeImages', type: Boolean, required: false })
-  @ApiQuery({ name: 'includeVariants', type: Boolean, required: false })
-  @ApiQuery({ name: 'includeAttributes', type: Boolean, required: false })
-  @ApiQuery({ name: 'includeBrandAndCountry', type: Boolean, required: false })
-  @ApiQuery({ name: 'includeCategories', type: Boolean, required: false })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Products retrieved successfully'
@@ -164,7 +154,9 @@ export class ProductsController {
       }
     }
   })
-  findAll(@Query() query: ProductQueryDto): Promise<ProductListResponseDto> {
+  findAll(
+    @Query() query: ProductQueryDto
+  ): Promise<OffsetPaginatedProductListResponse | CursorPaginatedProductListResponse> {
     return this.productsService.findAll(query)
   }
 
@@ -173,3 +165,33 @@ export class ProductsController {
   //   return this.productsService.remove(+id)
   // }
 }
+
+// @ApiQuery({ name: 'paginationType', enum: PaginationType, required: false })
+// @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
+// @ApiQuery({ name: 'limit', type: Number, required: false, example: 20 })
+// @ApiQuery({ name: 'cursor', type: String, required: false })
+// @ApiQuery({ name: 'search', type: String, required: false })
+// @ApiQuery({ name: 'status', enum: ProductStatus, required: false })
+// @ApiQuery({ name: 'categoryIds', type: [String], required: false })
+// @ApiQuery({ name: 'categorySlug', type: String, required: false })
+// @ApiQuery({ name: 'categoryPath', type: String, required: false })
+// @ApiQuery({ name: 'brandIds', type: [String], required: false })
+// @ApiQuery({ name: 'countryIds', type: [String], required: false })
+// @ApiQuery({ name: 'minPrice', type: Number, required: false })
+// @ApiQuery({ name: 'maxPrice', type: Number, required: false })
+// @ApiQuery({ name: 'inStock', type: Boolean, required: false })
+// @ApiQuery({ name: 'minStock', type: Number, required: false })
+// @ApiQuery({ name: 'maxStock', type: Number, required: false })
+// @ApiQuery({ name: 'hasActiveVariants', type: Boolean, required: false })
+// @ApiQuery({ name: 'minVariantPrice', type: Number, required: false })
+// @ApiQuery({ name: 'maxVariantPrice', type: Number, required: false })
+// @ApiQuery({ name: 'sku', type: String, required: false })
+// @ApiQuery({ name: 'createdAfter', type: Date, required: false })
+// @ApiQuery({ name: 'createdBefore', type: Date, required: false })
+// @ApiQuery({ name: 'sortBy', enum: ProductSortBy, required: false })
+// @ApiQuery({ name: 'sortOrder', enum: SortOrder, required: false })
+// @ApiQuery({ name: 'includeImages', type: Boolean, required: false })
+// @ApiQuery({ name: 'includeVariants', type: Boolean, required: false })
+// @ApiQuery({ name: 'includeAttributes', type: Boolean, required: false })
+// @ApiQuery({ name: 'includeBrandAndCountry', type: Boolean, required: false })
+// @ApiQuery({ name: 'includeCategories', type: Boolean, required: false })

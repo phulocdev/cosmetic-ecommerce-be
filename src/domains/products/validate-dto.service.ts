@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common'
-import { BadRequestError, NotFoundError } from 'core/exceptions/errors.exception'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { CreateProductDto } from 'domains/products/dto/create-product.dto'
 import { UpdateProductDto } from 'domains/products/dto/update-product.dto'
@@ -76,7 +75,7 @@ export class ValidateDtoService {
     }
 
     if (errors.length > 0) {
-      throw new NotFoundError(errors.join('; '))
+      throw new NotFoundException(errors.join('; '))
     }
   }
 
@@ -168,7 +167,7 @@ export class ValidateDtoService {
     }
 
     if (errors.length > 0) {
-      throw new BadRequestError(errors.join('; '))
+      throw new BadRequestException(errors.join('; '))
     }
   }
 
@@ -257,7 +256,7 @@ export class ValidateDtoService {
     }
 
     if (errors.length > 0) {
-      throw new NotFoundError(errors.join('; '))
+      throw new NotFoundException(errors.join('; '))
     }
   }
 
@@ -368,7 +367,7 @@ export class ValidateDtoService {
     }
 
     if (errors.length > 0) {
-      throw new BadRequestError(errors.join('; '))
+      throw new BadRequestException(errors.join('; '))
     }
   }
 }

@@ -2,7 +2,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post } from '@nestjs/c
 import { AuthUser } from 'core/decorators/auth-user.decorator'
 import { Public } from 'core/decorators/public.decorator'
 import { ResponseMessage } from 'core/decorators/response-message.decorator'
-import { EmailProducer } from 'core/email/email.producer'
+import { EmailProducer } from 'domains/email/email.producer'
 import { AuthService } from 'domains/auth/auth.service'
 import {
   ChangePasswordDto,

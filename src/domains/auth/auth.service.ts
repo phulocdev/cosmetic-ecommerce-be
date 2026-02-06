@@ -1,10 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService, TokenExpiredError } from '@nestjs/jwt'
 import * as bcrypt from 'bcrypt'
-import { EmailProducer } from 'core/email/email.producer'
-import { BadRequestError, UnauthorizedError } from 'core/exceptions/errors.exception'
-import crypto from 'crypto'
+import { EmailProducer } from 'domains/email/email.producer'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { REDIS_CLIENT } from 'database/redis/redis.module'
 import {
@@ -18,6 +16,7 @@ import { UsersService } from 'domains/users/users.service'
 import { UserRole } from 'enums'
 import Redis from 'ioredis'
 import ms from 'ms'
+import crypto from 'crypto'
 import { AccessTokenPayload, RefreshTokenPayload, User } from 'types'
 
 @Injectable()
@@ -41,7 +40,7 @@ export class AuthService {
     })
 
     if (existingUser) {
-      throw new BadRequestError('Email already exists')
+      throw new BadRequestException('Email already exists')
     }
 
     // Check the unique phone number if provided
@@ -51,7 +50,7 @@ export class AuthService {
       })
 
       if (existingPhoneUser) {
-        throw new BadRequestError('Phone number already exists')
+        throw new BadRequestException('Phone number already exists')
       }
     }
 
@@ -92,7 +91,7 @@ export class AuthService {
     if (ipAddress) {
       const attempts = await this.checkLoginAttempts(loginDto.email, ipAddress)
       if (attempts >= this.configService.get<number>('MAX_LOGIN_ATTEMPTS')) {
-        throw new BadRequestError('Too many failed login attempts. Try again in 15 minutes')
+        throw new BadRequestException('Too many failed login attempts. Try again in 15 minutes')
       }
     }
 
@@ -104,7 +103,7 @@ export class AuthService {
       if (ipAddress) {
         await this.recordFailedLogin(loginDto.email, ipAddress)
       }
-      throw new UnauthorizedError('Invalid credentials')
+      throw new UnauthorizedException('Invalid credentials')
     }
 
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password)
@@ -113,7 +112,7 @@ export class AuthService {
       if (ipAddress) {
         await this.recordFailedLogin(loginDto.email, ipAddress)
       }
-      throw new UnauthorizedError('Invalid credentials')
+      throw new UnauthorizedException('Invalid credentials')
     }
 
     // Clear failed attempts on successful login
@@ -147,18 +146,18 @@ export class AuthService {
     })
 
     if (!tokenRecord) {
-      throw new UnauthorizedError('Refresh token not found')
+      throw new UnauthorizedException('Refresh token not found')
     }
     // Check if revoked RT is used
     if (tokenRecord.isRevoked) {
       // Remove all RTs of the user and increase token version to invalidate all existing ATs
       await Promise.all([this.cleanAllUserTokens(tokenRecord.userId), this.increaseTokenVersion(tokenRecord.userId)])
-      throw new UnauthorizedError('Invalid refresh token')
+      throw new UnauthorizedException('Invalid refresh token')
     }
 
     // Check if user is still active
     if (!tokenRecord.user.isActive) {
-      throw new UnauthorizedError('User is inactive')
+      throw new UnauthorizedException('User is inactive')
     }
 
     // Verify RT signature and expiration by using async verify function
@@ -173,10 +172,10 @@ export class AuthService {
         // Revoke the expired token
         // await this.revokeRefreshToken(refreshToken)
         await this.cleanUserToken(refreshToken)
-        throw new UnauthorizedError('Refresh token has expired')
+        throw new UnauthorizedException('Refresh token has expired')
       }
 
-      throw new UnauthorizedError('Invalid refresh token')
+      throw new UnauthorizedException('Invalid refresh token')
     }
 
     // Check the existing token version
@@ -238,12 +237,12 @@ export class AuthService {
     const isCurrentPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password)
 
     if (!isCurrentPasswordValid) {
-      throw new BadRequestError('Current password is incorrect')
+      throw new BadRequestException('Current password is incorrect')
     }
 
     // Check that new password is different from current password
     if (changePasswordDto.currentPassword === changePasswordDto.newPassword) {
-      throw new BadRequestError('New password must be different from the current password')
+      throw new BadRequestException('New password must be different from the current password')
     }
 
     const hashedNewPassword = await this.hashPassword(changePasswordDto.newPassword)
@@ -308,7 +307,7 @@ export class AuthService {
     })
 
     if (!tokenRecord) {
-      throw new BadRequestError('Invalid password reset token')
+      throw new BadRequestException('Invalid password reset token')
     }
 
     const hashedNewPassword = await this.hashPassword(resetPasswordDto.newPassword)

@@ -3,6 +3,8 @@ import { AppService } from 'app.service'
 import { Public } from 'core/decorators/public.decorator'
 @Controller()
 export class AppController {
+  private readonly logger = new Logger(AppController.name)
+
   constructor(
     @Inject() private readonly appService: AppService // private readonly mailerService: MailerService
   ) {}
@@ -12,6 +14,7 @@ export class AppController {
   @Public()
   @Get()
   getHello() {
+    this.logger.log('Hello endpoint called')
     return this.appService.getHello()
   }
 

@@ -1,8 +1,7 @@
 // src/auth/strategies/jwt.strategy.ts
-import { Inject, Injectable } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PassportStrategy } from '@nestjs/passport'
-import { BadRequestError, UnauthorizedError } from 'core/exceptions/errors.exception'
 import { REDIS_CLIENT } from 'database/redis/redis.module'
 import { UsersService } from 'domains/users/users.service'
 import Redis from 'ioredis'
@@ -28,13 +27,13 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const currentTokenVersion = await this.redis.get(`user:${payload.userId}:access_token_version`)
 
     if (currentTokenVersion && parseInt(currentTokenVersion) > payload.version) {
-      throw new UnauthorizedError('Access token has been invalidated')
+      throw new UnauthorizedException('Access token has been invalidated')
     }
 
     const user = await this.usersService.findOne(payload.userId)
 
     if (!user || !user.isActive) {
-      throw new BadRequestError('User not found or inactive')
+      throw new BadRequestException('User not found or inactive')
     }
 
     return payload

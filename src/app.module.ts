@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common'
 import { PrismaModule } from 'database/prisma/prisma.module'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
@@ -10,13 +10,20 @@ import { BullModule } from '@nestjs/bull'
 import { ConfigService } from '@nestjs/config'
 import { ProductsModule } from './domains/products/products.module'
 import { CategoriesModule } from './domains/categories/categories.module'
+import { RequestLoggerMiddleware } from 'core'
+import { EmailModule } from 'domains/email/email.module'
 @Module({
   imports: [
+    // Core Modules
     CoreModule,
-    // PrismaModule,
-    AuthModule,
-    UsersModule,
+
+    // Database Modules
     RedisModule,
+
+    // Email Modules,
+    EmailModule,
+
+    // Queue Modules
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         redis: {
@@ -28,10 +35,18 @@ import { CategoriesModule } from './domains/categories/categories.module'
       }),
       inject: [ConfigService]
     }),
+
+    // Feature Modules
+    AuthModule,
+    UsersModule,
     ProductsModule,
     CategoriesModule
   ],
   controllers: [AppController],
   providers: [AppService]
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*')
+  }
+}

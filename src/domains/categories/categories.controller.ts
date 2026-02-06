@@ -20,8 +20,7 @@ import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
 import {
   BreadcrumbItem,
   CategoryEntity,
-  CategoryTreeNode,
-  PaginatedCategoriesResponse
+  CategoryTreeNode
 } from 'domains/categories/entities/category.entity'
 import {
   GetCategoriesQueryDto,
@@ -29,6 +28,7 @@ import {
   MoveCategoryDto
 } from 'domains/categories/dto/query-category.dto'
 import { ResponseMessage } from 'core/decorators/response-message.decorator'
+import { OffsetPaginatedResponseDto } from 'core'
 
 @Controller('categories')
 export class CategoriesController {
@@ -97,10 +97,12 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Categories retrieved successfully',
-    type: PaginatedCategoriesResponse
+    type: OffsetPaginatedResponseDto<CategoryEntity>
   })
   @ResponseMessage('Categories fetched successfully')
-  async findAll(@Query() query: GetCategoriesQueryDto): Promise<PaginatedCategoriesResponse> {
+  async findAll(
+    @Query() query: GetCategoriesQueryDto
+  ): Promise<OffsetPaginatedResponseDto<CategoryEntity>> {
     return this.categoriesService.findAll(query)
   }
 
@@ -285,7 +287,8 @@ export class CategoriesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Rebuild category paths (maintenance operation)',
-    description: 'Recalculates all category paths and depths. Use this if data becomes inconsistent.'
+    description:
+      'Recalculates all category paths and depths. Use this if data becomes inconsistent.'
   })
   @ApiResponse({
     status: HttpStatus.OK,

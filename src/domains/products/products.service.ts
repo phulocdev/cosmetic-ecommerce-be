@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
-import { ProductListResponseDto, ProductQueryDto } from 'domains/products/dto/find-all-product.dto'
+import {
+  CursorPaginatedProductListResponse,
+  OffsetPaginatedProductListResponse,
+  ProductQueryDto
+} from 'domains/products/dto/find-all-product.dto'
 import { UpdateProductDto } from 'domains/products/dto/update-product.dto'
 import { FindAllProductService } from 'domains/products/find-all-product.service'
 import { InvalidateFilterCacheService } from 'domains/products/invalidate-filter-cache.service'
@@ -277,7 +281,9 @@ export class ProductsService {
   /**
    * Find all products with flexible filtering and pagination
    */
-  async findAll(query: ProductQueryDto): Promise<ProductListResponseDto> {
+  async findAll(
+    query: ProductQueryDto
+  ): Promise<OffsetPaginatedProductListResponse | CursorPaginatedProductListResponse> {
     // Determine pagination type
     const paginationType = query.paginationType || PaginationType.OFFSET
 

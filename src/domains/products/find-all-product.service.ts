@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { BadRequestError } from 'core/exceptions/errors.exception'
+import { PaginationQueryDto } from 'core'
 import { PrismaService } from 'database/prisma/prisma.service'
-import { ProductFilterDto, ProductListResponseDto, ProductQueryDto } from 'domains/products/dto/find-all-product.dto'
+import {
+  CursorPaginatedProductListResponse,
+  OffsetPaginatedProductListResponse,
+  ProductQueryDto
+} from 'domains/products/dto/find-all-product.dto'
 import { ProductSortBy, SortOrder } from 'enums'
-import { CursorData, PaginationMetaDto } from 'types'
+import { CursorData } from 'types'
 
 @Injectable()
 export class FindAllProductService {
@@ -24,7 +28,7 @@ export class FindAllProductService {
    *    => items may be skipped or duplicated when paginating / move between pages
    * - Not suitable for real-time feeds
    */
-  async findAllWithOffsetPagination(query: ProductQueryDto): Promise<ProductListResponseDto> {
+  async findAllWithOffsetPagination(query: ProductQueryDto): Promise<OffsetPaginatedProductListResponse> {
     const page = query.page || 1
     const limit = query.limit || 20
     const skip = (page - 1) * limit
@@ -50,27 +54,13 @@ export class FindAllProductService {
       this.prismaService.product.count({ where })
     ])
 
-    // Calculate pagination metadata
-    const totalPages = Math.ceil(total / limit)
-    const hasNextPage = page < totalPages
-    const hasPreviousPage = page > 1
-
-    const meta: PaginationMetaDto = {
-      total,
-      page,
+    return new OffsetPaginatedProductListResponse({
+      items: products,
       limit,
-      totalPages,
-      hasNextPage,
-      hasPreviousPage
-    }
-
-    return {
-      data: products,
-      meta,
-      filters: {
-        applied: this.getAppliedFilters(query)
-      }
-    }
+      page,
+      total,
+      filters: { applied: this.getAppliedFilters(query) }
+    })
   }
 
   /**
@@ -88,7 +78,9 @@ export class FindAllProductService {
    * - More complex to implement
    * - Requires indexed sort columns
    */
-  async findAllWithCursorPagination(query: ProductQueryDto): Promise<ProductListResponseDto> {
+  async findAllWithCursorPagination(
+    query: ProductQueryDto & PaginationQueryDto
+  ): Promise<CursorPaginatedProductListResponse> {
     const limit = query.limit || 20
     const cursor = query.cursor
     const sortBy = query.sortBy || ProductSortBy.CREATED_AT
@@ -100,7 +92,7 @@ export class FindAllProductService {
       try {
         cursorData = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'))
       } catch (error) {
-        throw new BadRequestError('Invalid cursor format')
+        throw new BadRequestException('Invalid cursor format')
       }
     }
 
@@ -142,27 +134,20 @@ export class FindAllProductService {
       previousCursor = this.encodeCursor(firstItem, sortBy)
     }
 
-    const meta: PaginationMetaDto = {
-      limit,
+    return new CursorPaginatedProductListResponse({
+      items: products,
+      nextCursor,
+      previousCursor,
       hasNextPage,
       hasPreviousPage: !!cursor,
-      nextCursor,
-      previousCursor
-    }
-
-    return {
-      data: products,
-      meta,
-      filters: {
-        applied: this.getAppliedFilters(query)
-      }
-    }
+      filters: { applied: this.getAppliedFilters(query) }
+    })
   }
 
   /**
    * Build WHERE clause from filters
    */
-  private buildWhereClause(query: ProductFilterDto): Prisma.ProductWhereInput {
+  private buildWhereClause(query: ProductQueryDto): Prisma.ProductWhereInput {
     const where: Prisma.ProductWhereInput = {
       AND: []
     }
@@ -502,7 +487,7 @@ export class FindAllProductService {
   /**
    * Build include clause based on query options
    */
-  private buildIncludeClause(query: ProductFilterDto): Prisma.ProductInclude {
+  private buildIncludeClause(query: ProductQueryDto): Prisma.ProductInclude {
     const include: Prisma.ProductInclude = {}
 
     if (query.includeBrandAndCountry) {
@@ -586,7 +571,7 @@ export class FindAllProductService {
   /**
    * Get applied filters for response metadata
    */
-  private getAppliedFilters(query: ProductFilterDto): Record<string, any> {
+  private getAppliedFilters(query: ProductQueryDto): Record<string, any> {
     const applied: Record<string, any> = {}
 
     if (query.search) applied.search = query.search

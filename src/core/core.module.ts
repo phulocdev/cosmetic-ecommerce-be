@@ -1,65 +1,107 @@
-import { Module, ValidationPipe } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
+import { Module, UnprocessableEntityException, ValidationPipe } from '@nestjs/common'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
+import { ThrottlerModule } from '@nestjs/throttler'
 import { ValidationError } from 'class-validator'
-import { EmailModule } from 'core/email/email.module'
-import { UnprocessableEntityError } from 'core/exceptions/errors.exception'
-import GlobalExceptionFilter from 'core/exceptions/global-exception-filter'
-import { TransformResponseInterceptor } from 'core/interceptors/transform-response.interceptor'
-import { TrimBodyPayloadPipe } from 'core/pipes/trim-body-payload.pipe'
-import { JwtAuthGuard } from 'domains/auth/guards/jwt-auth.guard'
-import Joi from 'joi'
+import {
+  appConfig,
+  corsConfig,
+  databaseConfig,
+  jwtConfig,
+  securityConfig,
+  swaggerConfig,
+  throttleConfig
+} from 'config'
+import { HttpExceptionFilter } from 'core/filters'
+import { JwtAuthGuard } from 'core/guards/jwt-auth.guard'
+import { LoggingInterceptor, TimeoutInterceptor, TransformInterceptor } from 'core/interceptors'
 import { extractErrorMessageFromDto } from 'utils'
+import { validationSchema } from '../config/validation.schema'
+import { EventEmitterModule } from '@nestjs/event-emitter'
+import { ScheduleModule } from '@nestjs/schedule'
+import { TerminusModule } from '@nestjs/terminus'
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validationSchema: Joi.object({
-        NODE_ENV: Joi.string().valid('development', 'production', 'test', 'provision').required(),
-        PORT: Joi.number().port().required(),
-        API_KEY: Joi.string().required(),
-        JWT_ACCESS_SECRET: Joi.string().required(),
-        JWT_ACCESS_EXPIRATION: Joi.string().required(),
-        JWT_REFRESH_SECRET: Joi.string().required(),
-        JWT_REFRESH_EXPIRATION: Joi.string().required(),
-        SERVER_BASE_URL: Joi.string().required(),
-        CLOUDINARY_API_KEY: Joi.string().required(),
-        CLOUDINARY_API_SECRET: Joi.string().required(),
-        CLOUDINARY_CLOUD_NAME: Joi.string().required(),
-        EMAIL_HOST: Joi.string().required(),
-        EMAIL_SENDER: Joi.string().required(),
-        EMAIL_APP_PASSWORD: Joi.string().required(),
-        REDIS_HOST: Joi.string().required(),
-        REDIS_PORT: Joi.number().port().required(),
-        REDIS_PASSWORD: Joi.string().allow('').optional(),
-        REDIS_DB: Joi.number().optional(),
-        LOGIN_ATTEMPTS_WINDOW_SECONDS: Joi.number().optional(),
-        MAX_LOGIN_ATTEMPTS: Joi.number().optional()
-      })
+      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
+      load: [
+        appConfig,
+        corsConfig,
+        databaseConfig,
+        jwtConfig,
+        securityConfig,
+        swaggerConfig,
+        throttleConfig
+      ],
+      validationSchema,
+      validationOptions: {
+        allowUnknown: true, // allow environment variables that are not specified in the schema
+        abortEarly: true // stop validation on the first error
+      }
     }),
-    EmailModule
+    // Rate Limiting
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<number>('throttle.ttl', 60000),
+          limit: config.get<number>('throttle.limit', 100)
+        }
+      ]
+    }),
+
+    // Scheduling
+    ScheduleModule.forRoot(),
+
+    // Event Emitter
+    EventEmitterModule.forRoot({
+      wildcard: true,
+      delimiter: '.',
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: true,
+      ignoreErrors: false
+    }),
+
+    // Health Checks
+    TerminusModule
   ],
   providers: [
-    // { provide: APP_GUARD, useClass: ApiKeyGuard },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: TransformResponseInterceptor
+      useClass: TransformInterceptor
+    },
+    // {
+    //   provide: APP_INTERCEPTOR,
+    //   useClass: TimeoutInterceptor
+    // },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor
     },
     {
       provide: APP_PIPE,
       useValue: new ValidationPipe({
-        whitelist: true,
-        transform: true,
+        whitelist: true, // strip or remove properties that do not have any decorators
+        transform: true, // automatically transform payloads to DTO instances
+        forbidNonWhitelisted: true, // throw error on unexpected properties in DTO
         transformOptions: { enableImplicitConversion: true },
         stopAtFirstError: true,
+        validationError: {
+          target: false, // do not include the object that was validated in the error output
+          value: false // do not include the value that was validated in the error output
+        },
         exceptionFactory: (validationErrors: ValidationError[] = []) => {
           const errorMessage = extractErrorMessageFromDto(validationErrors)
-          return new UnprocessableEntityError(
+          return new UnprocessableEntityException(
             validationErrors.map((error, index) => ({
               field: error.property,
               message: errorMessage[index]
@@ -68,8 +110,7 @@ import { extractErrorMessageFromDto } from 'utils'
         }
       })
     },
-    { provide: APP_PIPE, useValue: new TrimBodyPayloadPipe() },
-    { provide: APP_FILTER, useClass: GlobalExceptionFilter }
+    { provide: APP_FILTER, useClass: HttpExceptionFilter }
   ],
   exports: []
 })

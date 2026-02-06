@@ -1,6 +1,6 @@
 import { OnQueueFailed, Process, Processor } from '@nestjs/bull'
 import { Job } from 'bull'
-import { EmailService } from 'core/email/email.service'
+import { EmailService } from 'domains/email/email.service'
 
 @Processor('email')
 export class EmailProcessor {

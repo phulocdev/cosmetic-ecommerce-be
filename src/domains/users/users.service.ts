@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
-import { NotFoundError } from 'core/exceptions/errors.exception'
+import { EntityNotFoundException } from 'core'
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name)
   constructor(private prismaService: PrismaService) {}
 
   create(createUserDto: CreateUserDto) {
@@ -22,7 +23,7 @@ export class UsersService {
     })
 
     if (!foundUser) {
-      throw new NotFoundError('User not found')
+      throw new EntityNotFoundException('User', id)
     }
 
     return foundUser
@@ -34,7 +35,7 @@ export class UsersService {
     })
 
     if (!foundUser) {
-      throw new NotFoundError('User not found')
+      throw new EntityNotFoundException('User', email)
     }
 
     return foundUser

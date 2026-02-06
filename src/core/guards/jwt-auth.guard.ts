@@ -1,10 +1,9 @@
 // src/auth/guards/jwt-auth.guard.ts
-import { Injectable, ExecutionContext, Inject } from '@nestjs/common'
+import { Injectable, ExecutionContext, Inject, UnauthorizedException } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { TokenExpiredError } from '@nestjs/jwt'
 import { AuthGuard } from '@nestjs/passport'
 import { IS_PUBLIC_KEY } from 'core/decorators/public.decorator'
-import { UnauthorizedError } from 'core/exceptions/errors.exception'
 import { REDIS_CLIENT } from 'database/redis/redis.module'
 import { Request } from 'express'
 import Redis from 'ioredis/built/Redis'
@@ -33,20 +32,21 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest()
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(request)
     if (!token) {
-      throw new UnauthorizedError('Access token is required')
+      throw new UnauthorizedException('Access token is required')
     }
 
     return super.canActivate(context)
   }
 
-  handleRequest(err, user, info) {
+  handleRequest<TUser = any>(err: any, user: TUser, info: any, context: ExecutionContext): TUser {
     if (info instanceof TokenExpiredError) {
-      throw new UnauthorizedError('Access token has expired')
+      throw new UnauthorizedException('Access token has expired')
     }
 
     if (err || !user) {
-      throw err || new UnauthorizedError('Invalid access token')
+      throw err || new UnauthorizedException('Invalid access token')
     }
+
     return user
   }
 }

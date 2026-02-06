@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { PaginatedResponse } from 'types'
+import { OffsetPaginatedResponseDto } from 'core'
 
 // Category entity representation for API Documentation (Swagger) and type definitions for response type of service methods
 export class CategoryEntity {
@@ -47,6 +47,10 @@ export class CategoryEntity {
 
   @ApiPropertyOptional()
   parent?: CategoryEntity
+
+  constructor(partial: Partial<CategoryEntity>) {
+    Object.assign(this, partial)
+  }
 }
 
 export class CategoryTreeNode {
@@ -73,6 +77,10 @@ export class CategoryTreeNode {
 
   @ApiPropertyOptional({ type: [CategoryTreeNode] })
   children?: CategoryTreeNode[]
+
+  constructor(partial: Partial<CategoryTreeNode>) {
+    Object.assign(this, partial)
+  }
 }
 
 export class BreadcrumbItem {
@@ -87,6 +95,8 @@ export class BreadcrumbItem {
 
   @ApiProperty()
   path: string
-}
 
-export class PaginatedCategoriesResponse extends PaginatedResponse<CategoryEntity> {}
+  constructor(partial: Partial<BreadcrumbItem>) {
+    Object.assign(this, partial)
+  }
+}

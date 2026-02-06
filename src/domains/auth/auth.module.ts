@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
-import { EmailModule } from 'core/email/email.module'
+import { EmailModule } from 'domains/email/email.module'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { JwtStrategy } from 'domains/auth/strategies/jwt.strategy'
 import { UsersModule } from 'domains/users/users.module'
