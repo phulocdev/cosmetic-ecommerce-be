@@ -1,13 +1,19 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common'
-import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger'
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common'
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
 import { ProductsService } from 'domains/products/products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 import { Public } from 'core/decorators/public.decorator'
+import { ProductSeedService } from 'domains/products/product-seed.service'
+import { ProductListResponseDto, ProductQueryDto } from 'domains/products/dto/find-all-product.dto'
+import { PaginationType, ProductSortBy, ProductStatus, SortOrder } from 'enums'
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly productSeedService: ProductSeedService
+  ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -100,7 +106,7 @@ export class ProductsController {
   @Get('seed')
   @Public()
   seed() {
-    return this.productsService.seed()
+    return this.productSeedService.seedProducts()
   }
 
   @Public()
@@ -109,10 +115,58 @@ export class ProductsController {
     return this.productsService.findById(id)
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.productsService.findAll()
-  // }
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get all products with filtering and pagination'
+  })
+  @ApiQuery({ name: 'paginationType', enum: PaginationType, required: false })
+  @ApiQuery({ name: 'page', type: Number, required: false, example: 1 })
+  @ApiQuery({ name: 'limit', type: Number, required: false, example: 20 })
+  @ApiQuery({ name: 'cursor', type: String, required: false })
+  @ApiQuery({ name: 'search', type: String, required: false })
+  @ApiQuery({ name: 'status', enum: ProductStatus, required: false })
+  @ApiQuery({ name: 'categoryIds', type: [String], required: false })
+  @ApiQuery({ name: 'categorySlug', type: String, required: false })
+  @ApiQuery({ name: 'categoryPath', type: String, required: false })
+  @ApiQuery({ name: 'brandIds', type: [String], required: false })
+  @ApiQuery({ name: 'countryIds', type: [String], required: false })
+  @ApiQuery({ name: 'minPrice', type: Number, required: false })
+  @ApiQuery({ name: 'maxPrice', type: Number, required: false })
+  @ApiQuery({ name: 'inStock', type: Boolean, required: false })
+  @ApiQuery({ name: 'minStock', type: Number, required: false })
+  @ApiQuery({ name: 'maxStock', type: Number, required: false })
+  @ApiQuery({ name: 'hasActiveVariants', type: Boolean, required: false })
+  @ApiQuery({ name: 'minVariantPrice', type: Number, required: false })
+  @ApiQuery({ name: 'maxVariantPrice', type: Number, required: false })
+  @ApiQuery({ name: 'sku', type: String, required: false })
+  @ApiQuery({ name: 'createdAfter', type: Date, required: false })
+  @ApiQuery({ name: 'createdBefore', type: Date, required: false })
+  @ApiQuery({ name: 'sortBy', enum: ProductSortBy, required: false })
+  @ApiQuery({ name: 'sortOrder', enum: SortOrder, required: false })
+  @ApiQuery({ name: 'includeImages', type: Boolean, required: false })
+  @ApiQuery({ name: 'includeVariants', type: Boolean, required: false })
+  @ApiQuery({ name: 'includeAttributes', type: Boolean, required: false })
+  @ApiQuery({ name: 'includeBrandAndCountry', type: Boolean, required: false })
+  @ApiQuery({ name: 'includeCategories', type: Boolean, required: false })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Products retrieved successfully'
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid query parameters',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid cursor format',
+        error: 'Bad Request'
+      }
+    }
+  })
+  findAll(@Query() query: ProductQueryDto): Promise<ProductListResponseDto> {
+    return this.productsService.findAll(query)
+  }
 
   // @Delete(':id')
   // remove(@Param('id') id: string) {

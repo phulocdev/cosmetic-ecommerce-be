@@ -1,12 +1,14 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { RESPONSE_MESSAGE } from 'core/decorators/response-message.decorator'
+import { RESPONSE_MESSAGE_KEY } from 'core/decorators/response-message.decorator'
 import { map, Observable } from 'rxjs'
 
 export interface Response<T> {
+  success: boolean
   statusCode: number
   message: string
   data: T
+  meta?: any
 }
 
 @Injectable()
@@ -14,7 +16,7 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
   constructor(private reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
-    const responseMessage = this.reflector.getAllAndOverride<string>(RESPONSE_MESSAGE, [
+    const responseMessage = this.reflector.getAllAndOverride<string>(RESPONSE_MESSAGE_KEY, [
       context.getHandler(),
       context.getClass()
     ])
@@ -25,6 +27,7 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
       map((response) => {
         if (!response) {
           return {
+            success: true,
             statusCode,
             message: responseMessage ?? 'OK',
             data: []
@@ -34,13 +37,14 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
         // Case: Response with pagination metadata
         if (response.data && response.meta) {
           return {
+            success: true,
             statusCode,
-            message: responseMessage ?? 'OK',
+            message: responseMessage || 'OK',
             data: response.data,
             meta: response.meta
           }
         }
-        return { statusCode, message: responseMessage ?? 'OK', data: response }
+        return { success: true, statusCode, message: responseMessage || 'OK', data: response }
       })
     )
   }
