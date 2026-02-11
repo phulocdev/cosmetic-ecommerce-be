@@ -534,14 +534,19 @@ model Address {
 }
 
 model RefreshToken {
-  id String @id @default(uuid())
-
+  // Don't use default(uuid()) here, because we need to ensure the same jti between DB and JWT Payloads
+  id String @id // JTI synchonized with JWT jti claim (in payload) 
+  
   userId String
 
-  token String @unique
+  hashedToken String @unique // Don't store raw token for security reasons
   expiresAt DateTime
-  isRevoked Boolean @default(false)
-  // replacedByToken String?
+  isRevoked Boolean @default(false) // To manually revoke token by system - when user refresh (logout - remove user's RT instead instead of revoking)
+  isUsed Boolean @default(false) // To detect reuse attack - used in Atomic Update when refreshing token
+
+  // Just need this field when you want revoke / remove tokens in a chain (parent, child, grand-child, ...)
+  // In realworld application, we will remove all of user's refresh tokens when reuse attack is detected
+  // replacedByToken String? 
 
   user User @relation(fields: [userId], references: [id])
 

@@ -1,9 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsEmail, IsEnum } from 'class-validator'
-import { IsOptional } from 'class-validator/types/decorator/common/IsOptional'
-import { IsString } from 'class-validator/types/decorator/typechecker/IsString'
+import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString } from 'class-validator'
 import { PaginationQueryDto } from 'core'
-import { ProductStatus, UserRole } from 'enums'
+import { UserRole } from 'enums'
 
 /**
  * Request DTO for querying users with pagination

@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, UnauthorizedException } from '
 import { ConfigService } from '@nestjs/config'
 import { JwtService, TokenExpiredError } from '@nestjs/jwt'
 import * as bcrypt from 'bcrypt'
-import { EmailProducer } from 'domains/email/email.producer'
+import crypto from 'crypto'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { REDIS_CLIENT } from 'database/redis/redis.module'
 import {
@@ -12,16 +12,20 @@ import {
   RegisterDto,
   ResetPasswordDto
 } from 'domains/auth/dtos/auth.dto'
+import { EmailProducer } from 'domains/email/email.producer'
+import { UserEntity } from 'domains/users'
 import { UsersService } from 'domains/users/users.service'
 import { UserRole } from 'enums'
 import Redis from 'ioredis'
 import ms from 'ms'
-import crypto from 'crypto'
 import { AccessTokenPayload, RefreshTokenPayload, User } from 'types'
+import { hashToken } from 'utils/hash.util'
+import { v4 as uuidv4 } from 'uuid'
 
 @Injectable()
 export class AuthService {
   private readonly LOGIN_ATTEMPTS_PREFIX = 'login_attempts:'
+  private readonly ACCESS_TOKEN_BLACKLIST_PREFIX = 'blacklist:access:'
 
   constructor(
     @Inject() private prismaService: PrismaService,
@@ -67,23 +71,35 @@ export class AuthService {
 
     // When user logs in / register, get/set their current token version
     const tokenVersion = Number(await this.getTokenVersion(user.id)) + 0
+    const accessTokenJti = uuidv4()
+    const refreshTokenJti = uuidv4()
 
     const accessTokenPayload: AccessTokenPayload = {
       userId: user.id,
+      jti: accessTokenJti,
       email: user.email,
       role: user.role as UserRole,
       version: tokenVersion
     }
-    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role as UserRole }
+    const refreshTokenPayload: RefreshTokenPayload = {
+      userId: user.id,
+      jti: refreshTokenJti,
+      email: user.email,
+      role: user.role as UserRole
+    }
 
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(accessTokenPayload),
       this.signRefreshToken(refreshTokenPayload)
     ])
 
-    await this.createRefreshTokenRecord(user.id, refreshToken)
+    await this.createRefreshTokenRecord(refreshTokenJti, user.id, hashToken(refreshToken))
 
-    return { user: this.sanitizeUser({ ...user, role: user.role as UserRole }), accessToken, refreshToken }
+    return {
+      user: this.sanitizeUser(user),
+      accessToken,
+      refreshToken
+    }
   }
 
   async login(loginDto: LoginDto, ipAddress?: string) {
@@ -121,46 +137,65 @@ export class AuthService {
     }
 
     const tokenVersion = Number(await this.getTokenVersion(user.id)) || 0
+    const accessTokenJti = uuidv4()
+    const refreshTokenJti = uuidv4()
+
     const accessTokenPayload: AccessTokenPayload = {
       userId: user.id,
+      jti: accessTokenJti,
       email: user.email,
       role: user.role as UserRole,
       version: +tokenVersion
     }
-    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role as UserRole }
+    const refreshTokenPayload: RefreshTokenPayload = {
+      userId: user.id,
+      jti: refreshTokenJti,
+      email: user.email,
+      role: user.role as UserRole
+    }
 
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(accessTokenPayload),
       this.signRefreshToken(refreshTokenPayload)
     ])
 
-    await this.createRefreshTokenRecord(user.id, refreshToken)
+    await this.createRefreshTokenRecord(refreshTokenJti, user.id, hashToken(refreshToken))
 
-    return { user: this.sanitizeUser({ ...user, role: user.role as UserRole }), accessToken, refreshToken }
+    // Case 1: NestJS Server and NextJS Server are in the same domain => Cookies can be set directly here
+    // Because NextJS Client can send cookies to both NestJS Server and NextJS Server
+    // res.cookie('refreshToken', refreshToken, {
+    //   httpOnly: true,
+    //   secure: false, // true in production (HTTPS)
+    //   sameSite: 'lax',
+    //   maxAge: +ms(this.configService.get('JWT_REFRESH_EXPIRATION')) // in milliseconds
+    // })
+
+    // res.cookie('accessToken', accessToken, {
+    //   httpOnly: true,
+    //   secure: false, // true in production (HTTPS)
+    //   sameSite: 'lax',
+    //   maxAge: +ms(this.configService.get('JWT_ACCESS_EXPIRATION')) // in milliseconds
+    // })
+
+    //  return res.send({
+    //   user: this.sanitizeUser({ ...user, role: user.role as UserRole }),
+    //   accessToken,
+    //   refreshToken
+    // })
+
+    // Case 2: NestJS Server and NextJS Server are in different domains => Cannot set cookies here
+    // Must send tokens in response body and let NextJS Server set the cookies to NextJS Client
+    // And then NextJS Client can send cookies to NextJS Server only (not NestJS Server directly)
+
+    return {
+      // user: new UserEntity(user), // not working properly, because user is Prisma User type, need to transform manually
+      user: this.sanitizeUser(user),
+      accessToken,
+      refreshToken
+    }
   }
 
   async refreshTokens(refreshToken: string) {
-    const tokenRecord = await this.prismaService.refreshToken.findFirst({
-      where: { token: refreshToken },
-      include: { user: true }
-    })
-
-    if (!tokenRecord) {
-      throw new UnauthorizedException('Refresh token not found')
-    }
-    // Check if revoked RT is used
-    if (tokenRecord.isRevoked) {
-      // Remove all RTs of the user and increase token version to invalidate all existing ATs
-      await Promise.all([this.cleanAllUserTokens(tokenRecord.userId), this.increaseTokenVersion(tokenRecord.userId)])
-      throw new UnauthorizedException('Invalid refresh token')
-    }
-
-    // Check if user is still active
-    if (!tokenRecord.user.isActive) {
-      throw new UnauthorizedException('User is inactive')
-    }
-
-    // Verify RT signature and expiration by using async verify function
     let decodedRefreshToken: RefreshTokenPayload | undefined
 
     try {
@@ -169,35 +204,96 @@ export class AuthService {
       })
     } catch (error) {
       if (error instanceof TokenExpiredError) {
-        // Revoke the expired token
-        // await this.revokeRefreshToken(refreshToken)
-        await this.cleanUserToken(refreshToken)
+        await this.cleanUserRefreshToken(decodedRefreshToken?.jti)
         throw new UnauthorizedException('Refresh token has expired')
       }
 
       throw new UnauthorizedException('Invalid refresh token')
     }
 
+    const { jti, userId } = decodedRefreshToken
+
+    if (!jti || !userId) {
+      throw new UnauthorizedException('Malformed refresh token')
+    }
+
+    // Hash the incoming refresh token to compare with stored hashed token
+    const hashedRefreshToken = hashToken(refreshToken)
+
+    const existingRefreshToken = await this.prismaService.refreshToken.findUnique({
+      where: { id: jti },
+      include: { user: true }
+    })
+
+    if (!existingRefreshToken) {
+      throw new UnauthorizedException('Refresh token not found')
+    }
+
+    if (existingRefreshToken.hashedToken !== hashedRefreshToken) {
+      throw new UnauthorizedException('Refresh token mismatch')
+    }
+
+    if (existingRefreshToken.userId !== userId || existingRefreshToken.user.id !== userId) {
+      throw new UnauthorizedException('Refresh token does not belong to the user')
+    }
+
+    // Check if user is still active
+    if (!existingRefreshToken.user.isActive) {
+      throw new UnauthorizedException('User is inactive')
+    }
+
+    /**
+     * Check if RT is revoked - Reuse attack detected
+     * isRevoked field: using in case admin manually revoke the RT from database or System revoke when refresh token successfully
+     */
+
+    if (existingRefreshToken.isRevoked) {
+      // Remove all RTs of the user and increase token version to invalidate all existing ATs
+      await Promise.all([this.cleanAllUserTokens(userId), this.increaseTokenVersion(userId)])
+      throw new UnauthorizedException('Refresh token has been reused or revoked')
+    }
+
+    // Atomic Update to prevent reuse attack: Mark the token as used and revoked at the same time - In case Race Condition
+    const updateRTResult = await this.prismaService.refreshToken.updateMany({
+      where: { id: jti, isUsed: false },
+      data: { isUsed: true }
+    })
+
+    /**
+     * Check if RT is re-used - Reuse attack detected
+     * isUsed field: using in case Race Condition where multiple requests with the same RT
+     */
+
+    if (updateRTResult.count === 0) {
+      // Remove all RTs of the user and increase token version to invalidate all existing ATs
+      await Promise.all([this.cleanAllUserTokens(userId), this.increaseTokenVersion(userId)])
+      throw new UnauthorizedException('Refresh token has been reused or revoked')
+    }
+
     // Check the existing token version
-    let tokenVersion = +(await this.getTokenVersion(tokenRecord.user.id))
+    let tokenVersion = +(await this.getTokenVersion(userId))
+    const accessTokenJti = uuidv4()
+    const refreshTokenJti = uuidv4()
 
     // Edge case: Initialize token version if not exists
     if (tokenVersion === null) {
       tokenVersion = 0
-      await this.saveTokenVersion(tokenVersion, tokenRecord.user.id)
+      await this.saveTokenVersion(tokenVersion, userId)
     }
 
     // Generate new tokens
     const accessTokenPayload: AccessTokenPayload = {
-      userId: tokenRecord.user.id,
-      email: tokenRecord.user.email,
-      role: tokenRecord.user.role as UserRole,
+      userId,
+      jti: accessTokenJti,
+      email: existingRefreshToken.user.email,
+      role: existingRefreshToken.user.role as UserRole,
       version: tokenVersion
     }
     const refreshTokenPayload: RefreshTokenPayload = {
-      userId: tokenRecord.user.id,
-      email: tokenRecord.user.email,
-      role: tokenRecord.user.role as UserRole
+      userId,
+      jti: refreshTokenJti,
+      email: existingRefreshToken.user.email,
+      role: existingRefreshToken.user.role as UserRole
     }
 
     const [accessToken, newRefreshToken] = await Promise.all([
@@ -205,36 +301,74 @@ export class AuthService {
       this.signRefreshToken(refreshTokenPayload, decodedRefreshToken.exp)
     ])
 
-    // Mark old token as replaced and save new refresh token
-    await Promise.all([
-      this.createRefreshTokenRecord(tokenRecord.user.id, newRefreshToken, tokenRecord.expiresAt),
-      this.revokeRefreshToken(refreshToken)
-    ])
+    // In case we use Promise.all, if creating new RT fails but revoking old one succeeds,
+    // user will lose both tokens and have to login again
+    // await Promise.all([
+    //   this.createRefreshTokenRecord(
+    //     refreshTokenJti,
+    //     tokenRecord.user.id,
+    //     newRefreshToken,
+    //     tokenRecord.expiresAt
+    //   ),
+    //   this.revokeRefreshToken(refreshToken)
+    // ])
+
+    // save new refresh token and mark old token as replaced  - Don't use Promise.all here because
+    // We need to make sure that new RT is created before revoking the old one to
+    await this.createRefreshTokenRecord(
+      refreshTokenJti,
+      userId,
+      hashToken(newRefreshToken),
+      existingRefreshToken.expiresAt
+    )
+    await this.revokeRefreshToken(jti)
 
     return {
-      user: this.sanitizeUser({ ...tokenRecord.user, role: tokenRecord.user.role as UserRole }),
+      user: this.sanitizeUser(existingRefreshToken.user),
       accessToken,
       refreshToken: newRefreshToken
     }
   }
 
   async logout(accessTokenPayload: AccessTokenPayload, refreshToken: string) {
-    // *------- Blacklist access token (Add access token to Redis) and Remove refresh token from database ----- *
+    let decodedRefreshToken: RefreshTokenPayload | undefined
 
-    // Old way: Blacklist access token and remove only the used refresh token
-    // await Promise.all([this.blacklistAccessToken(accessTokenPayload), this.cleanUserToken(refreshToken)])
+    // Must verify the refresh token to prevent logging out with a random / invalid RT / hacker modify RT's payload to logout other users
+    try {
+      decodedRefreshToken = await this.jwtService.verifyAsync<RefreshTokenPayload>(refreshToken, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+        ignoreExpiration: true
+      })
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token')
+    }
 
-    // New way: Just remove the refresh token and increment the token version to invalidate all existing access tokens
-    await Promise.all([this.cleanUserToken(refreshToken), this.increaseTokenVersion(accessTokenPayload.userId)])
+    // Blacklist access token and remove only the used refresh token
+    await Promise.all([
+      this.cleanUserRefreshToken(decodedRefreshToken.jti),
+      this.blacklistAccessToken(accessTokenPayload)
+    ])
 
-    return { message: 'Logged out successfully' }
+    // Old way: Just remove the refresh token and increment the token version to invalidate all existing access tokens
+    // This way make all sessions in other devices logged out as well -> Not good about UX
+    // -> Save this acccessToken to Redis blacklist to check if this access token is reused later or not. If reuse - throw error
+    // await Promise.all([
+    //   this.cleanUserRefreshToken(refreshToken),
+    //   this.increaseTokenVersion(accessTokenPayload.userId)
+    // ])
   }
 
-  async changePassword(accessTokenPayload: AccessTokenPayload, changePasswordDto: ChangePasswordDto) {
+  async changePassword(
+    accessTokenPayload: AccessTokenPayload,
+    changePasswordDto: ChangePasswordDto
+  ) {
     const user = await this.usersService.findOne(accessTokenPayload.userId)
 
     // Check if current password is correct
-    const isCurrentPasswordValid = await bcrypt.compare(changePasswordDto.currentPassword, user.password)
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password
+    )
 
     if (!isCurrentPasswordValid) {
       throw new BadRequestException('Current password is incorrect')
@@ -255,26 +389,34 @@ export class AuthService {
       })
 
       // Remove all existing refresh tokens
-      await this.cleanAllUserTokens(accessTokenPayload.userId)
+      await this.cleanAllUserTokens(accessTokenPayload.userId, prisma)
     })
 
     // Increase token version to invalidate all existing access tokens
     const newTokenVersion = await this.increaseTokenVersion(accessTokenPayload.userId)
+    const accessTokenJti = uuidv4()
+    const refreshTokenJti = uuidv4()
 
     // Generate new tokens
     const newAccessTokenPayload: AccessTokenPayload = {
       userId: user.id,
+      jti: accessTokenJti,
       email: user.email,
       role: user.role as UserRole,
       version: newTokenVersion
     }
-    const refreshTokenPayload: RefreshTokenPayload = { userId: user.id, email: user.email, role: user.role as UserRole }
+    const refreshTokenPayload: RefreshTokenPayload = {
+      userId: user.id,
+      jti: refreshTokenJti,
+      email: user.email,
+      role: user.role as UserRole
+    }
     const [accessToken, refreshToken] = await Promise.all([
       this.signAccessToken(newAccessTokenPayload),
       this.signRefreshToken(refreshTokenPayload)
     ])
 
-    await this.createRefreshTokenRecord(user.id, refreshToken)
+    await this.createRefreshTokenRecord(refreshTokenJti, user.id, hashToken(refreshToken))
     return { accessToken, refreshToken }
   }
 
@@ -323,7 +465,7 @@ export class AuthService {
         where: { userId: tokenRecord.userId }
       })
       // Remove all existing refresh tokens
-      await this.cleanAllUserTokens(tokenRecord.userId)
+      await this.cleanAllUserTokens(tokenRecord.userId, prisma)
     })
 
     // Increase token version to invalidate all existing access tokens
@@ -363,13 +505,19 @@ export class AuthService {
     })
   }
 
-  private createRefreshTokenRecord(userId: string, token: string, expiresAt?: Date) {
+  private createRefreshTokenRecord(
+    jti: string,
+    userId: string,
+    hashedToken: string,
+    expiresAt?: Date
+  ) {
     // Case: Refresh token
     if (expiresAt) {
       return this.prismaService.refreshToken.create({
         data: {
+          id: jti,
           userId,
-          token,
+          hashedToken,
           expiresAt
         }
       })
@@ -382,27 +530,34 @@ export class AuthService {
 
     return this.prismaService.refreshToken.create({
       data: {
+        id: jti,
         userId,
-        token,
+        hashedToken,
         expiresAt: standardRTExpiration
       }
     })
   }
 
-  private revokeRefreshToken(refreshToken: string) {
+  private revokeRefreshToken(jti: string) {
     return this.prismaService.refreshToken.update({
-      where: { token: refreshToken, isRevoked: false },
+      where: { id: jti, isRevoked: false },
       data: { isRevoked: true }
     })
   }
 
-  private cleanUserToken(refreshToken: string) {
+  private cleanUserRefreshToken(jti: string) {
     return this.prismaService.refreshToken.delete({
-      where: { token: refreshToken }
+      where: { id: jti }
     })
   }
 
-  private cleanAllUserTokens(userId: string) {
+  private cleanAllUserTokens(userId: string, tx?: any) {
+    if (tx) {
+      return tx.refreshToken.deleteMany({
+        where: { userId }
+      })
+    }
+
     return this.prismaService.refreshToken.deleteMany({
       where: { userId }
     })
@@ -471,14 +626,14 @@ export class AuthService {
     })
   }
 
-  // private async blacklistAccessToken(accessTokenPayload: AccessTokenPayload) {
-  //   const now = Math.floor(Date.now() / 1000) // current time in seconds
-  //   const { exp, jti, userId } = accessTokenPayload
-  //   const ttl = exp - now
+  private async blacklistAccessToken(accessTokenPayload: AccessTokenPayload) {
+    const now = Math.floor(Date.now() / 1000) // current time in seconds
+    const { exp, jti, userId } = accessTokenPayload
+    const ttl = exp - now
 
-  //   if (ttl > 0 && jti) {
-  //     // Store in Redis with TTL matching token expiration
-  //     await this.redis.setex(`${this.ACCESS_TOKEN_BLACKLIST_PREFIX}${jti}`, ttl, userId)
-  //   }
-  // }
+    if (ttl > 0 && jti) {
+      // Store in Redis with TTL matching token expiration
+      await this.redis.setex(`${this.ACCESS_TOKEN_BLACKLIST_PREFIX}${jti}`, ttl, userId)
+    }
+  }
 }

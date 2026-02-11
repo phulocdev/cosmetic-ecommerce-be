@@ -1,8 +1,7 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post } from '@nestjs/common'
-import { AuthUser } from 'core/decorators/auth-user.decorator'
+import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post, Res } from '@nestjs/common'
+import { CurrentUser } from 'core'
 import { Public } from 'core/decorators/public.decorator'
 import { ResponseMessage } from 'core/decorators/response-message.decorator'
-import { EmailProducer } from 'domains/email/email.producer'
 import { AuthService } from 'domains/auth/auth.service'
 import {
   ChangePasswordDto,
@@ -12,6 +11,7 @@ import {
   RegisterDto,
   ResetPasswordDto
 } from 'domains/auth/dtos/auth.dto'
+import { Response } from 'express'
 import { AccessTokenPayload } from 'types'
 import { normalizeIp } from 'utils'
 
@@ -47,7 +47,10 @@ export class AuthController {
   @Post('logout')
   @ResponseMessage('Logout successfully')
   @HttpCode(HttpStatus.OK)
-  async logout(@AuthUser() accessTokenPayload: AccessTokenPayload, @Body() refreshTokenDto: RefreshTokenDto) {
+  async logout(
+    @CurrentUser() accessTokenPayload: AccessTokenPayload,
+    @Body() refreshTokenDto: RefreshTokenDto
+  ) {
     return this.authService.logout(accessTokenPayload, refreshTokenDto.refreshToken)
   }
 
@@ -55,7 +58,7 @@ export class AuthController {
   @ResponseMessage('Password changed successfully')
   @HttpCode(HttpStatus.OK)
   async changePassword(
-    @AuthUser() accessTokenPayload: AccessTokenPayload,
+    @CurrentUser() accessTokenPayload: AccessTokenPayload,
     @Body() changePasswordDto: ChangePasswordDto
   ) {
     this.authService.changePassword(accessTokenPayload, changePasswordDto)

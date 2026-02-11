@@ -5,15 +5,12 @@
  */
 
 import { User as TUser } from '@prisma/client'
+import { AuthenticatedUser } from 'core'
 
 declare global {
   namespace Express {
     interface Request {
-      user?: Partial<TUser> & {
-        id: string
-        email: string
-        role: string
-      }
+      user?: Partial<TUser> & AuthenticatedUser
       requestId?: string
     }
   }

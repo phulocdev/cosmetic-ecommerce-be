@@ -9,17 +9,18 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-  RequestTimeoutException,
-} from '@nestjs/common';
-import { Observable, throwError, TimeoutError } from 'rxjs';
-import { catchError, timeout } from 'rxjs/operators';
+  RequestTimeoutException
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { Observable, throwError, TimeoutError } from 'rxjs'
+import { catchError, timeout } from 'rxjs/operators'
 
 @Injectable()
 export class TimeoutInterceptor implements NestInterceptor {
-  private readonly timeoutMs: number;
+  private readonly timeoutMs: number
 
-  constructor(timeoutMs = 30000) {
-    this.timeoutMs = timeoutMs;
+  constructor(private configService: ConfigService) {
+    this.timeoutMs = this.configService.get<number>('app.requestTimeoutMs', 30000)
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -27,10 +28,10 @@ export class TimeoutInterceptor implements NestInterceptor {
       timeout(this.timeoutMs),
       catchError((err) => {
         if (err instanceof TimeoutError) {
-          return throwError(() => new RequestTimeoutException('Request timeout'));
+          return throwError(() => new RequestTimeoutException('Request timeout'))
         }
-        return throwError(() => err);
-      }),
-    );
+        return throwError(() => err)
+      })
+    )
   }
 }

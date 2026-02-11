@@ -23,10 +23,13 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: AccessTokenPayload): Promise<AccessTokenPayload> {
-    // Check if user's token version has been invalidated
-    const currentTokenVersion = await this.redis.get(`user:${payload.userId}:access_token_version`)
+    // Check if user's access token is blacklisted? and accesss token version has been invalidated
+    const [isBlacklisted, currentTokenVersion] = await Promise.all([
+      this.redis.get(`blacklist:access:${payload.jti}`),
+      this.redis.get(`user:${payload.userId}:access_token_version`)
+    ])
 
-    if (currentTokenVersion && parseInt(currentTokenVersion) > payload.version) {
+    if ((currentTokenVersion && parseInt(currentTokenVersion) > payload.version) || isBlacklisted) {
       throw new UnauthorizedException('Access token has been invalidated')
     }
 

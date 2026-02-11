@@ -36,7 +36,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
             statusCode,
             message: responseMessage || 'Success',
             data: data.items,
-            meta: data.meta,
+            meta: data.filters ? { ...data.meta, filters: data.filters } : data.meta,
             timestamp: new Date().toISOString()
           }
         }
@@ -45,7 +45,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
           success: true,
           statusCode,
           message: responseMessage || 'Success',
-          data,
+          data: data || [],
           timestamp: new Date().toISOString()
         }
       })

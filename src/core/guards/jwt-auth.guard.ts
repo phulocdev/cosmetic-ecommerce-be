@@ -3,6 +3,7 @@ import { Injectable, ExecutionContext, Inject, UnauthorizedException } from '@ne
 import { Reflector } from '@nestjs/core'
 import { TokenExpiredError } from '@nestjs/jwt'
 import { AuthGuard } from '@nestjs/passport'
+import { AuthenticatedUser } from 'core/decorators'
 import { IS_PUBLIC_KEY } from 'core/decorators/public.decorator'
 import { REDIS_CLIENT } from 'database/redis/redis.module'
 import { Request } from 'express'

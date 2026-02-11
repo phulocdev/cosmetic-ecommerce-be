@@ -111,5 +111,7 @@ export const validationSchema = Joi.object({
   LOGIN_ATTEMPTS_WINDOW_SECONDS: Joi.number().default(900),
 
   // Added validation for MAX_LOGIN_ATTEMPTS
-  MAX_LOGIN_ATTEMPTS: Joi.number().default(5)
+  MAX_LOGIN_ATTEMPTS: Joi.number().default(5),
+
+  APP_REQUEST_TIMEOUT_MS: Joi.number().default(30000) // 30 seconds
 })

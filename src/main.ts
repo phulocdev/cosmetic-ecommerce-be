@@ -29,7 +29,10 @@ async function bootstrap() {
   const helmetEnabled = configService.get<boolean>('security.helmet', true)
   const swaggerEnabled = configService.get<boolean>('swagger.enabled', true)
   const swaggerTitle = configService.get<string>('swagger.title', 'NestJS API')
-  const swaggerDescription = configService.get<string>('swagger.description', 'Production-ready NestJS API')
+  const swaggerDescription = configService.get<string>(
+    'swagger.description',
+    'Production-ready NestJS API'
+  )
   const swaggerVersion = configService.get<string>('swagger.version', '1.0')
   const swaggerPath = configService.get<string>('swagger.path', 'docs')
   const uploadDest = configService.get<string>('app.uploadDest', './uploads')

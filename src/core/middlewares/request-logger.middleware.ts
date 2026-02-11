@@ -10,35 +10,30 @@ import { v4 as uuidv4 } from 'uuid'
 
 @Injectable()
 export class RequestLoggerMiddleware implements NestMiddleware {
-  private readonly logger = new Logger('CC')
+  private readonly logger = new Logger(RequestLoggerMiddleware.name)
 
   use(req: Request, res: Response, next: NextFunction): void {
-    // Add unique request ID
-    // The requesId is added to both request headers and response headers for tracking
-    // The requesId is generated using UUID v4 from the server side
-    // and then attached to the request by Client must also send the same header back for tracking
     const requestId = (req.headers['x-request-id'] as string) || uuidv4()
     req.headers['x-request-id'] = requestId
     res.setHeader('X-Request-ID', requestId)
 
-    // Log request start
     const startTime = Date.now()
     const { method, originalUrl, ip } = req
 
-    // Log when response finishes
     res.on('finish', () => {
       const duration = Date.now() - startTime
       const { statusCode } = res
       const contentLength = res.get('content-length') || 0
 
       const logMessage = `${method} ${originalUrl} ${statusCode} ${contentLength}B - ${duration}ms`
+      const context = `RequestID: ${requestId} | IP: ${ip}`
 
       if (statusCode >= 500) {
-        this.logger.error(logMessage, { requestId, ip })
+        this.logger.error(logMessage, context)
       } else if (statusCode >= 400) {
-        this.logger.warn(logMessage, { requestId, ip })
+        this.logger.warn(logMessage, context)
       } else {
-        this.logger.log(logMessage, { requestId, ip })
+        this.logger.log(logMessage, context)
       }
     })
 

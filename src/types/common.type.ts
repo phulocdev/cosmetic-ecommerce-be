@@ -1,3 +1,5 @@
+import { UserRole } from 'enums'
+
 /**
  * Standard API response structure
  */
@@ -30,7 +32,8 @@ export interface ErrorResponse {
 export interface JwtPayload {
   userId: string
   email: string
-  role: string
+  role: UserRole
+  jti: string
   iat?: number
   exp?: number
   iss?: string

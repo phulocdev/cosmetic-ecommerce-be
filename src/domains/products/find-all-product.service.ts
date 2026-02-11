@@ -28,7 +28,9 @@ export class FindAllProductService {
    *    => items may be skipped or duplicated when paginating / move between pages
    * - Not suitable for real-time feeds
    */
-  async findAllWithOffsetPagination(query: ProductQueryDto): Promise<OffsetPaginatedProductListResponse> {
+  async findAllWithOffsetPagination(
+    query: ProductQueryDto
+  ): Promise<OffsetPaginatedProductListResponse> {
     const page = query.page || 1
     const limit = query.limit || 20
     const skip = (page - 1) * limit
@@ -54,13 +56,15 @@ export class FindAllProductService {
       this.prismaService.product.count({ where })
     ])
 
-    return new OffsetPaginatedProductListResponse({
+    const res = new OffsetPaginatedProductListResponse({
       items: products,
       limit,
       page,
       total,
       filters: { applied: this.getAppliedFilters(query) }
     })
+
+    return res
   }
 
   /**
@@ -371,7 +375,10 @@ export class FindAllProductService {
               // When multiple items have the same createdAt timestamp, we compare their IDs to decide order
               //  => Consistently paginate without skipping or duplicating items. Additionaly, assure the cosistency of results between many users' requests
               {
-                AND: [{ createdAt: { equals: cursorData.createdAt } }, { id: { [operator]: cursorData.id } }]
+                AND: [
+                  { createdAt: { equals: cursorData.createdAt } },
+                  { id: { [operator]: cursorData.id } }
+                ]
               }
             ]
           })
@@ -384,7 +391,10 @@ export class FindAllProductService {
             OR: [
               { updatedAt: { [operator]: cursorData.updatedAt } },
               {
-                AND: [{ updatedAt: { equals: cursorData.updatedAt } }, { id: { [operator]: cursorData.id } }]
+                AND: [
+                  { updatedAt: { equals: cursorData.updatedAt } },
+                  { id: { [operator]: cursorData.id } }
+                ]
               }
             ]
           })
@@ -426,7 +436,10 @@ export class FindAllProductService {
             OR: [
               { views: { [operator]: cursorData.views } },
               {
-                AND: [{ views: { equals: cursorData.views } }, { id: { [operator]: cursorData.id } }]
+                AND: [
+                  { views: { equals: cursorData.views } },
+                  { id: { [operator]: cursorData.id } }
+                ]
               }
             ]
           })
@@ -448,7 +461,10 @@ export class FindAllProductService {
   /**
    * Build ORDER BY clause
    */
-  private buildOrderByClause(sortBy?: ProductSortBy, sortOrder?: SortOrder): Prisma.ProductOrderByWithRelationInput[] {
+  private buildOrderByClause(
+    sortBy?: ProductSortBy,
+    sortOrder?: SortOrder
+  ): Prisma.ProductOrderByWithRelationInput[] {
     const sort = sortBy || ProductSortBy.CREATED_AT
     const order = sortOrder || SortOrder.DESC
 

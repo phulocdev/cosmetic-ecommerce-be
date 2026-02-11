@@ -20,5 +20,8 @@ export default registerAs('app', () => ({
   assetPrefix: process.env.APP_ASSET_PREFIX || '/public/',
 
   // Security
-  bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10)
+  bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10),
+
+  // Request timeout
+  requestTimeoutMs: parseInt(process.env.APP_REQUEST_TIMEOUT_MS || '30000', 10) // 30 seconds
 }))

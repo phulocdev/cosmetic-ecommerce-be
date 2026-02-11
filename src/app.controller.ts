@@ -1,6 +1,8 @@
 import { Controller, Get, Inject, Logger } from '@nestjs/common'
 import { AppService } from 'app.service'
+import { CurrentUser } from 'core'
 import { Public } from 'core/decorators/public.decorator'
+import { User } from 'types'
 @Controller()
 export class AppController {
   private readonly logger = new Logger(AppController.name)
@@ -16,6 +18,13 @@ export class AppController {
   getHello() {
     this.logger.log('Hello endpoint called')
     return this.appService.getHello()
+  }
+
+  @Get('verify-user')
+  verifyUser(@CurrentUser() user: User) {
+    this.logger.log('Verify user endpoint called')
+
+    return user
   }
 
   @Public()

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
-import { EntityNotFoundException } from 'core'
+import { EntityNotFoundException, OffsetPaginatedResponseDto } from 'core'
 
 @Injectable()
 export class UsersService {
@@ -13,8 +13,14 @@ export class UsersService {
     return 'This action adds a new user'
   }
 
-  findAll() {
-    return `This action returns all users`
+  async findAll() {
+    const users = await this.prismaService.user.findMany()
+    return new OffsetPaginatedResponseDto({
+      items: users,
+      limit: users.length,
+      page: 1,
+      total: users.length
+    })
   }
 
   async findOne(id: string) {
