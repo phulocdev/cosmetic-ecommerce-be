@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { OffsetPaginatedResponseDto } from 'core'
 
 // Category entity representation for API Documentation (Swagger) and type definitions for response type of service methods
-export class CategoryEntity {
+export class Category {
   @ApiProperty()
   id: string
 
@@ -39,16 +39,16 @@ export class CategoryEntity {
   @ApiProperty()
   updatedAt: Date
 
-  @ApiPropertyOptional({ type: [CategoryEntity] })
-  children?: CategoryEntity[]
+  @ApiPropertyOptional({ type: [Category] })
+  children?: Category[]
 
   @ApiPropertyOptional()
   productCount?: number
 
   @ApiPropertyOptional()
-  parent?: CategoryEntity
+  parent?: Category
 
-  constructor(partial: Partial<CategoryEntity>) {
+  constructor(partial: Partial<Category>) {
     Object.assign(this, partial)
   }
 }

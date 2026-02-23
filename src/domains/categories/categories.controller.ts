@@ -19,7 +19,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto'
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
 import {
   BreadcrumbItem,
-  CategoryEntity,
+  Category,
   CategoryTreeNode
 } from 'domains/categories/entities/category.entity'
 import {
@@ -40,7 +40,7 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Category created successfully',
-    type: CategoryEntity
+    type: Category
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
@@ -50,7 +50,7 @@ export class CategoriesController {
     status: HttpStatus.NOT_FOUND,
     description: 'Parent category not found'
   })
-  async create(@Body() createCategoryDto: CreateCategoryDto): Promise<CategoryEntity> {
+  async create(@Body() createCategoryDto: CreateCategoryDto): Promise<Category> {
     return this.categoriesService.create(createCategoryDto)
   }
 
@@ -97,12 +97,12 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Categories retrieved successfully',
-    type: OffsetPaginatedResponseDto<CategoryEntity>
+    type: OffsetPaginatedResponseDto<Category>
   })
   @ResponseMessage('Categories fetched successfully')
   async findAll(
     @Query() query: GetCategoriesQueryDto
-  ): Promise<OffsetPaginatedResponseDto<CategoryEntity>> {
+  ): Promise<OffsetPaginatedResponseDto<Category>> {
     return this.categoriesService.findAll(query)
   }
 
@@ -125,7 +125,7 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Category found',
-    type: CategoryEntity
+    type: Category
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -137,7 +137,7 @@ export class CategoriesController {
     includeChildren: boolean,
     @Query('includeProductCount', new DefaultValuePipe(false), ParseBoolPipe)
     includeProductCount: boolean
-  ): Promise<CategoryEntity> {
+  ): Promise<Category> {
     return this.categoriesService.findOne(id, includeChildren, includeProductCount)
   }
 
@@ -160,7 +160,7 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Category found',
-    type: CategoryEntity
+    type: Category
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -172,7 +172,7 @@ export class CategoriesController {
     includeChildren: boolean,
     @Query('includeProductCount', new DefaultValuePipe(false), ParseBoolPipe)
     includeProductCount: boolean
-  ): Promise<CategoryEntity> {
+  ): Promise<Category> {
     return this.categoriesService.findBySlug(slug, includeChildren, includeProductCount)
   }
 
@@ -201,7 +201,7 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Category updated successfully',
-    type: CategoryEntity
+    type: Category
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -214,7 +214,7 @@ export class CategoriesController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCategoryDto: UpdateCategoryDto
-  ): Promise<CategoryEntity> {
+  ): Promise<Category> {
     return this.categoriesService.update(id, updateCategoryDto)
   }
 
@@ -225,7 +225,7 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Category moved successfully',
-    type: CategoryEntity
+    type: Category
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -238,7 +238,7 @@ export class CategoriesController {
   async moveCategory(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() moveDto: MoveCategoryDto
-  ): Promise<CategoryEntity> {
+  ): Promise<Category> {
     return this.categoriesService.moveCategory(id, moveDto)
   }
 
@@ -249,7 +249,7 @@ export class CategoriesController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Category deactivated successfully',
-    type: CategoryEntity
+    type: Category
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -259,7 +259,7 @@ export class CategoriesController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Cannot delete category with children or products'
   })
-  async softDelete(@Param('id', ParseUUIDPipe) id: string): Promise<CategoryEntity> {
+  async softDelete(@Param('id', ParseUUIDPipe) id: string): Promise<Category> {
     return this.categoriesService.softDelete(id)
   }
 

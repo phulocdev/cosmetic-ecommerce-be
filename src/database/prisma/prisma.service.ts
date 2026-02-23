@@ -1,11 +1,11 @@
 // prisma.service.ts
-import { Injectable, OnModuleInit } from '@nestjs/common'
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor(private configService: ConfigService) {
     const adapter = new PrismaPg({
       connectionString: configService.get<string>('DATABASE_URL')
@@ -17,5 +17,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     await this.$connect().catch((error) => {
       console.error('Prisma connection error:', error)
     })
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect()
   }
 }

@@ -11,6 +11,7 @@ export default registerAs('database', () => ({
   name: process.env.DATABASE_NAME || 'cosmetic_ecommerce',
   user: process.env.DATABASE_USER || 'postgres',
   password: process.env.DATABASE_PASSWORD || 'postgres',
+  type: process.env.DATABASE_TYPE || 'prisma',
 
   // Connection pool
   poolMin: parseInt(process.env.DATABASE_POOL_MIN || '2', 10),

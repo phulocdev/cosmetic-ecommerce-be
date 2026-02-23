@@ -11,13 +11,15 @@ import { AuthModule } from 'domains/auth'
 import { UsersModule } from 'domains/users'
 import { ProductsModule } from 'domains/products'
 import { CategoriesModule } from 'domains/categories/categories.module'
+import { DatabaseModule } from './database/database.module'
+import { BrandsModule } from './domains/brands/brands.module'
+import { CountryOfOriginModule } from './domains/country-of-origin/country-of-origin.module'
 @Module({
   imports: [
     // Core Modules
     CoreModule,
 
-    // Database Modules
-    RedisModule,
+    DatabaseModule,
 
     // Email Modules,
     EmailModule,
@@ -39,7 +41,10 @@ import { CategoriesModule } from 'domains/categories/categories.module'
     AuthModule,
     UsersModule,
     ProductsModule,
-    CategoriesModule
+    CategoriesModule,
+    DatabaseModule,
+    BrandsModule,
+    CountryOfOriginModule
   ],
   controllers: [AppController],
   providers: [AppService]

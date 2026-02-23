@@ -87,3 +87,7 @@ export class CursorData {
   views?: number
   name?: string
 }
+
+export interface TransactionManager {
+  runInTransaction<T>(work: () => Promise<T>): Promise<T>
+}

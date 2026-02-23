@@ -373,7 +373,7 @@ export class FindAllProductService {
               { createdAt: { [operator]: cursorData.createdAt } },
               // The below condition ensures stable sorting by using ID as tiebreaker
               // When multiple items have the same createdAt timestamp, we compare their IDs to decide order
-              //  => Consistently paginate without skipping or duplicating items. Additionaly, assure the cosistency of results between many users' requests
+              //  => Consistently paginate without skipping or duplicating items. Additionaly, assure the consistency of results between many users' requests
               {
                 AND: [
                   { createdAt: { equals: cursorData.createdAt } },

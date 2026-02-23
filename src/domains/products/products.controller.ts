@@ -5,23 +5,22 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger'
-import { ResponseMessage } from 'core'
+import { ParseUUIDPipe, ResponseMessage } from 'core'
 import { Public } from 'core/decorators/public.decorator'
 import {
   CursorPaginatedProductListResponse,
   OffsetPaginatedProductListResponse,
   ProductQueryDto
 } from 'domains/products/dto/find-all-product.dto'
-import { ProductSeedService } from 'domains/products/product-seed.service'
 import { ProductsService } from 'domains/products/products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
+import { ProductSeedService } from 'domains/products/product-seed.service'
 
 @Controller('products')
 export class ProductsController {

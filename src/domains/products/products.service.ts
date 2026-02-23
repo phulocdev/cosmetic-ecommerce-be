@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
+import { Prisma, Product } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
+import { CreateProductDto } from 'domains/products/dto'
 import {
   CursorPaginatedProductListResponse,
   OffsetPaginatedProductListResponse,
@@ -13,7 +14,6 @@ import { UpdateProductService } from 'domains/products/update-product.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
 import { PaginationType } from 'enums'
 import slugify from 'slugify'
-import { CreateProductDto } from './dto/create-product.dto'
 
 @Injectable()
 export class ProductsService {
@@ -46,7 +46,8 @@ export class ProductsService {
         data: {
           code: createProductDto.code,
           name: createProductDto.name,
-          slug: createProductDto.slug || slugify(createProductDto.name, { lower: true, strict: true }),
+          slug:
+            createProductDto.slug || slugify(createProductDto.name, { lower: true, strict: true }),
           description: createProductDto.description,
           status: createProductDto.status,
           basePrice: new Prisma.Decimal(createProductDto.basePrice),
@@ -216,7 +217,11 @@ export class ProductsService {
 
     // Step 2: Validate references and business rules
     await this.validateDtoService.validateReferencesForUpdate(id, updateProductDto)
-    await this.validateDtoService.validateBusinessRulesForUpdate(id, updateProductDto, existingProduct)
+    await this.validateDtoService.validateBusinessRulesForUpdate(
+      id,
+      updateProductDto,
+      existingProduct
+    )
 
     // Step 3: Get old categories for cache invalidation
     const oldCategoryIds = existingProduct.categories.map((c) => c.categoryId)
@@ -227,11 +232,12 @@ export class ProductsService {
       // We must need the updatedData variable because the createProductDto can contains other fields that are not exist in Product model
       // Such as: categories, images, variants, attributes
       // So we need to separate them before updating the product
-      const updateData: any = {}
+      const updateData: Partial<Product> = {}
       if (updateProductDto.code !== undefined) updateData.code = updateProductDto.code
       if (updateProductDto.name !== undefined) updateData.name = updateProductDto.name
       if (updateProductDto.slug !== undefined) updateData.slug = updateProductDto.slug
-      if (updateProductDto.description !== undefined) updateData.description = updateProductDto.description
+      if (updateProductDto.description !== undefined)
+        updateData.description = updateProductDto.description
       if (updateProductDto.status !== undefined) updateData.status = updateProductDto.status
       if (updateProductDto.basePrice !== undefined) {
         updateData.basePrice = new Prisma.Decimal(updateProductDto.basePrice)
@@ -242,7 +248,7 @@ export class ProductsService {
       }
 
       // Update base product model with its own fields such as: name, description, brandId, etc.
-      // Other fields with complex logic (categories, images, variants, attributes) are handled below separately
+      // Other fields with complex logic (categories, images, variants, attributes) are separately handled below
       if (Object.keys(updateData).length > 0) {
         await tx.product.update({
           where: { id },
@@ -272,7 +278,10 @@ export class ProductsService {
     })
 
     // Step 5: Invalidate filter cache for old and new categories
-    await this.invalidateFilterCacheService.invalidateFilterCacheForUpdate(oldCategoryIds, updateProductDto)
+    await this.invalidateFilterCacheService.invalidateFilterCacheForUpdate(
+      oldCategoryIds,
+      updateProductDto
+    )
 
     // Step 6: Return the updated product with all relations
     return this.findById(id)

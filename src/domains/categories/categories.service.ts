@@ -14,7 +14,7 @@ import {
 } from 'domains/categories/dto/query-category.dto'
 import {
   BreadcrumbItem,
-  CategoryEntity,
+  Category,
   CategoryTreeNode
 } from 'domains/categories/entities/category.entity'
 import slugify from 'slugify'
@@ -148,7 +148,7 @@ export class CategoriesService {
 
   // Build nested tree structure from flat array
   private buildTree(
-    categories: CategoryEntity[],
+    categories: Category[],
     rootId?: string,
     includeProductCount = false
   ): CategoryTreeNode[] {
@@ -194,7 +194,7 @@ export class CategoriesService {
   /**
    * Get category by slug
    */
-  async findBySlug(slug: string, includeChildren, includeProductCount): Promise<CategoryEntity> {
+  async findBySlug(slug: string, includeChildren, includeProductCount): Promise<Category> {
     const include: Prisma.CategoryInclude = {}
 
     if (includeChildren) {
@@ -219,7 +219,7 @@ export class CategoriesService {
       throw new NotFoundException(`Category with slug "${slug}" not found`)
     }
 
-    return new CategoryEntity({
+    return new Category({
       ...category,
       productCount: includeProductCount ? (category as any)._count?.products : undefined
     })
@@ -228,7 +228,7 @@ export class CategoriesService {
   /**
    * Create a new category
    */
-  async create(createCategoryDto: CreateCategoryDto): Promise<CategoryEntity> {
+  async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
     const { name, slug, parentId, ...rest } = createCategoryDto
 
     // Generate slug if not provided
@@ -275,13 +275,13 @@ export class CategoriesService {
       }
     })
 
-    return new CategoryEntity(category)
+    return new Category(category)
   }
 
   /**
    * Get paginated categories with filters
    */
-  async findAll(query: GetCategoriesQueryDto): Promise<OffsetPaginatedResponseDto<CategoryEntity>> {
+  async findAll(query: GetCategoriesQueryDto): Promise<OffsetPaginatedResponseDto<Category>> {
     const {
       page = 1,
       limit = 20,
@@ -352,7 +352,7 @@ export class CategoriesService {
       _count: undefined
     }))
 
-    return new OffsetPaginatedResponseDto<CategoryEntity>({
+    return new OffsetPaginatedResponseDto<Category>({
       items: categoryItems,
       limit,
       page,
@@ -367,7 +367,7 @@ export class CategoriesService {
     id: string,
     includeChildren = false,
     includeProductCount = false
-  ): Promise<CategoryEntity> {
+  ): Promise<Category> {
     const include: Prisma.CategoryInclude = {}
 
     if (includeChildren) {
@@ -394,7 +394,7 @@ export class CategoriesService {
     return {
       ...category,
       productCount: includeProductCount ? (category as any)._count?.products : undefined
-    } as CategoryEntity
+    } as Category
   }
 
   /**
@@ -459,7 +459,7 @@ export class CategoriesService {
   //   return descendants
   // }
 
-  // Move category (updates path for all descendants) - We can update this cateogry to the root level or under a new parent
+  // Move category (updates path for all descend  ants) - We can update this cateogry to the root level or under a new parent
   // newParent = null -> move to root level
   // newParent = someId -> move under that category
   // async moveCategory(categoryId: string, newParentId: string | null) {
@@ -512,7 +512,7 @@ export class CategoriesService {
   /**
    * Update category
    */
-  async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<CategoryEntity> {
+  async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     const category = await this.prismaService.category.findUnique({
       where: { id }
     })
@@ -554,7 +554,7 @@ export class CategoriesService {
   /**
    * Move category to new parent (updates path and depth for entire subtree)
    */
-  async moveCategory(id: string, moveDto: MoveCategoryDto): Promise<CategoryEntity> {
+  async moveCategory(id: string, moveDto: MoveCategoryDto): Promise<Category> {
     const category = await this.prismaService.category.findUnique({
       where: { id }
     })
@@ -634,7 +634,7 @@ export class CategoriesService {
   /**
    * Soft delete category (mark as inactive)
    */
-  async softDelete(id: string): Promise<CategoryEntity> {
+  async softDelete(id: string): Promise<Category> {
     const category = await this.prismaService.category.findUnique({
       where: { id },
       include: {

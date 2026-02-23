@@ -1,6 +1,14 @@
 import { Injectable } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
+import { Prisma, ProductImage, ProductVariant, VariantImage } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
+import {
+  UpdateProductAttributeDto,
+  UpdateProductCategoryDto,
+  UpdateProductImageDto,
+  UpdateProductVariantDto,
+  UpdateVariantAttributeValueDto,
+  UpdateVariantImageDto
+} from 'domains/products/dto'
 
 @Injectable()
 export class UpdateProductService {
@@ -9,7 +17,11 @@ export class UpdateProductService {
   /**
    * Update product categories
    */
-  async updateProductCategories(tx: any, productId: string, categories: any[]) {
+  async updateProductCategories(
+    tx: Prisma.TransactionClient,
+    productId: string,
+    categories: UpdateProductCategoryDto[]
+  ) {
     for (const category of categories) {
       if (category._delete && category.categoryId) {
         // Delete specific category association
@@ -60,7 +72,11 @@ export class UpdateProductService {
   /**
    * Update product images
    */
-  async updateProductImages(tx: any, productId: string, images: any[]) {
+  async updateProductImages(
+    tx: Prisma.TransactionClient,
+    productId: string,
+    images: UpdateProductImageDto[]
+  ) {
     for (const image of images) {
       if (image._delete && image.id) {
         // Delete specific image
@@ -69,7 +85,7 @@ export class UpdateProductService {
         })
       } else if (image.id) {
         // Update existing image
-        const updateData: any = {}
+        const updateData: Partial<ProductImage> = {}
         if (image.url !== undefined) updateData.url = image.url
         if (image.altText !== undefined) updateData.altText = image.altText
 
@@ -95,7 +111,11 @@ export class UpdateProductService {
   /**
    * Update product attributes
    */
-  async updateProductAttributes(tx: any, productId: string, attributes: any[]) {
+  async updateProductAttributes(
+    tx: Prisma.TransactionClient,
+    productId: string,
+    attributes: UpdateProductAttributeDto[]
+  ) {
     for (const attribute of attributes) {
       if (attribute._delete && attribute.attributeId) {
         // Delete specific attribute
@@ -146,16 +166,20 @@ export class UpdateProductService {
   /**
    * Update product variants
    */
-  async updateProductVariants(tx: any, productId: string, variants: any[]) {
+  async updateProductVariants(
+    tx: Prisma.TransactionClient,
+    productId: string,
+    variants: UpdateProductVariantDto[]
+  ) {
     for (const variant of variants) {
       if (variant._delete && variant.id) {
-        // Delete variant (cascade will handle attribute - VariantAttribute model values and images -  VariantImage model)
+        // Delete variant (cascade will handle attribute - VariantAttributeValue and VariantImage model)
         await tx.productVariant.delete({
           where: { id: variant.id }
         })
       } else if (variant.id) {
         // Update existing variant
-        const updateData: any = {}
+        const updateData: Partial<ProductVariant> = {}
         if (variant.sku !== undefined) updateData.sku = variant.sku
         if (variant.name !== undefined) updateData.name = variant.name
         if (variant.barcode !== undefined) updateData.barcode = variant.barcode
@@ -244,7 +268,11 @@ export class UpdateProductService {
   /**
    * Update variant attribute values
    */
-  async updateVariantAttributeValues(tx: any, variantId: string, attributeValues: any[]) {
+  async updateVariantAttributeValues(
+    tx: Prisma.TransactionClient,
+    variantId: string,
+    attributeValues: UpdateVariantAttributeValueDto[]
+  ) {
     for (const attrVal of attributeValues) {
       if (attrVal._delete && attrVal.id) {
         // Delete specific attribute value
@@ -285,7 +313,11 @@ export class UpdateProductService {
   /**
    * Update variant images
    */
-  async updateVariantImages(tx: any, variantId: string, images: any[]) {
+  async updateVariantImages(
+    tx: Prisma.TransactionClient,
+    variantId: string,
+    images: UpdateVariantImageDto[]
+  ) {
     for (const image of images) {
       if (image._delete && image.id) {
         // Delete specific image
@@ -294,7 +326,7 @@ export class UpdateProductService {
         })
       } else if (image.id) {
         // Update existing image
-        const updateData: any = {}
+        const updateData: Partial<VariantImage> = {}
         if (image.url !== undefined) updateData.url = image.url
         if (image.altText !== undefined) updateData.altText = image.altText
 

@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common'
-import { ProductsService } from './products.service'
 import { ProductsController } from './products.controller'
-import { PrismaService } from 'database/prisma/prisma.service'
+import { ProductsService } from 'domains/products/products.service'
 import { ProductSeedService } from 'domains/products/product-seed.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
 import { InvalidateFilterCacheService } from 'domains/products/invalidate-filter-cache.service'
@@ -12,7 +11,6 @@ import { FindAllProductService } from 'domains/products/find-all-product.service
   controllers: [ProductsController],
   providers: [
     ProductsService,
-    PrismaService,
     ProductSeedService,
     ValidateDtoService,
     InvalidateFilterCacheService,
