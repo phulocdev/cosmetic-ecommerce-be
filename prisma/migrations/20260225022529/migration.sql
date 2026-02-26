@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Attribute" ALTER COLUMN "type" DROP NOT NULL,
+ALTER COLUMN "type" SET DEFAULT 'TEXT';

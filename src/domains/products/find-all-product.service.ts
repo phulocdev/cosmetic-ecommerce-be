@@ -56,15 +56,13 @@ export class FindAllProductService {
       this.prismaService.product.count({ where })
     ])
 
-    const res = new OffsetPaginatedProductListResponse({
+    return new OffsetPaginatedProductListResponse({
       items: products,
       limit,
       page,
       total,
       filters: { applied: this.getAppliedFilters(query) }
     })
-
-    return res
   }
 
   /**

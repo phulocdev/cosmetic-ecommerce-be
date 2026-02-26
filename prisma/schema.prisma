@@ -159,7 +159,7 @@ model ProductVariant {
 
   product                  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   attributeValues          VariantAttributeValue[]
-  images                   VariantImage[]
+  image                    VariantImage[]
   inboundTransactionItems  InboundTransactionDetail[]
   outboundTransactionItems OutboundTransactionDetail[]
   orderDetails             OrderDetail[]
@@ -595,7 +595,7 @@ model Attribute {
   id          String              @id @default(uuid())
   name        String              @unique // "Color", "Size", "Material" / "Màu sắc" / "Kích thước" / "Chất liệu"
   slug        String              @unique
-  type        AttributeType       // COLOR, SIZE, TEXT, NUMBER
+  type        AttributeType?      @default(TEXT)       // COLOR, SIZE, TEXT, NUMBER
 
   // Filter-specific fields
   isGlobalFilter  Boolean @default(false) // Show on /collections/all?

@@ -13,7 +13,11 @@ import {
   IsUUID,
   Min
 } from 'class-validator'
-import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto, PaginationQueryDto } from 'core/dto/pagination.dto'
+import {
+  CursorPaginatedResponseDto,
+  OffsetPaginatedResponseDto,
+  PaginationQueryDto
+} from 'core/dto/pagination.dto'
 import { ProductSortBy, ProductStatus, SortOrder } from 'enums'
 import { Product } from '@prisma/client'
 
@@ -274,7 +278,9 @@ export class ProductQueryDto extends PaginationQueryDto {
     example: SortOrder.DESC,
     default: SortOrder.DESC
   })
-  @IsEnum(SortOrder, { message: `Sort order must be a valid SortOrder: ${Object.values(SortOrder).join(', ')}` })
+  @IsEnum(SortOrder, {
+    message: `Sort order must be a valid SortOrder: ${Object.values(SortOrder).join(', ')}`
+  })
   @IsOptional()
   sortOrder?: SortOrder = SortOrder.DESC
 

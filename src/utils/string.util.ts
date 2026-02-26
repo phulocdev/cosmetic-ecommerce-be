@@ -9,6 +9,7 @@
  */
 
 import * as crypto from 'crypto'
+import slugify from 'slugify'
 
 export function generateRandomString(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -29,14 +30,8 @@ export function generateSecureToken(length: number = 32): string {
 /**
  * Slugify a string
  */
-export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '')
+export function slugifyString(text: string): string {
+  return slugify(text, { lower: true, strict: true })
 }
 
 /**
@@ -68,7 +63,8 @@ export function toTitleCase(str: string): string {
  */
 export function maskEmail(email: string): string {
   const [username, domain] = email.split('@')
-  const masked = username.charAt(0) + '*'.repeat(Math.max(username.length - 2, 1)) + username.slice(-1)
+  const masked =
+    username.charAt(0) + '*'.repeat(Math.max(username.length - 2, 1)) + username.slice(-1)
   return `${masked}@${domain}`
 }
 

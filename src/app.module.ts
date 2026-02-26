@@ -14,6 +14,7 @@ import { CategoriesModule } from 'domains/categories/categories.module'
 import { DatabaseModule } from './database/database.module'
 import { BrandsModule } from './domains/brands/brands.module'
 import { CountryOfOriginModule } from './domains/country-of-origin/country-of-origin.module'
+import { AttributesModule } from './domains/attributes/attributes.module';
 @Module({
   imports: [
     // Core Modules
@@ -44,7 +45,8 @@ import { CountryOfOriginModule } from './domains/country-of-origin/country-of-or
     CategoriesModule,
     DatabaseModule,
     BrandsModule,
-    CountryOfOriginModule
+    CountryOfOriginModule,
+    AttributesModule
   ],
   controllers: [AppController],
   providers: [AppService]

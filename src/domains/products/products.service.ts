@@ -13,7 +13,7 @@ import { InvalidateFilterCacheService } from 'domains/products/invalidate-filter
 import { UpdateProductService } from 'domains/products/update-product.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
 import { PaginationType } from 'enums'
-import slugify from 'slugify'
+import { slugifyString } from 'utils'
 
 @Injectable()
 export class ProductsService {
@@ -46,8 +46,7 @@ export class ProductsService {
         data: {
           code: createProductDto.code,
           name: createProductDto.name,
-          slug:
-            createProductDto.slug || slugify(createProductDto.name, { lower: true, strict: true }),
+          slug: createProductDto.slug || slugifyString(createProductDto.name),
           description: createProductDto.description,
           status: createProductDto.status,
           basePrice: new Prisma.Decimal(createProductDto.basePrice),
@@ -119,7 +118,15 @@ export class ProductsService {
             })
           }
 
-          // Create variant images
+          // // Create variant images
+          // await tx.variantImage.create({
+          //   data: {
+          //     variantId: createdVariant.id,
+          //     url: variant.imageUrl,
+          //     altText: variant.name
+          //   }
+          // })
+
           if (variant.images && variant.images.length > 0) {
             await tx.variantImage.createMany({
               data: variant.images.map((img) => ({

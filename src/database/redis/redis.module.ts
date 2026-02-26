@@ -6,7 +6,6 @@ export const REDIS_CLIENT = 'REDIS_CLIENT'
 
 @Global()
 @Module({
-  imports: [ConfigModule],
   providers: [
     {
       provide: REDIS_CLIENT,

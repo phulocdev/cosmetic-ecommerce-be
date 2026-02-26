@@ -1,7 +1,8 @@
+import { Attribute } from 'domains/attributes/entities/attribute.entity'
 import { Brand } from 'domains/brands/entities/brand.entity'
 import { Category } from 'domains/categories/entities/category.entity'
 import { CountryOfOrigin } from 'domains/country-of-origin/entities/country-of-origin.entity'
-import { ProductStatus } from 'enums'
+import { AttributeType, ProductStatus } from 'enums'
 
 export class Product {
   id: string
@@ -36,20 +37,6 @@ export class ProductCategory {
   category?: Category
 
   constructor(data: ProductCategory) {
-    Object.assign(this, data)
-  }
-}
-
-export class Attribute {
-  id: string
-  name: string
-  slug: string
-  type: string // AttributeType
-  isGlobalFilter: boolean
-  filterGroup?: string
-  unit?: string
-
-  constructor(data: Attribute) {
     Object.assign(this, data)
   }
 }

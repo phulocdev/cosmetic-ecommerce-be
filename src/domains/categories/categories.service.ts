@@ -5,6 +5,7 @@ import {
   NotFoundException
 } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import { OffsetPaginatedResponseDto } from 'core'
 import { PrismaService } from 'database/prisma/prisma.service'
 import {
   CategoryTreeFormat,
@@ -17,10 +18,9 @@ import {
   Category,
   CategoryTreeNode
 } from 'domains/categories/entities/category.entity'
-import slugify from 'slugify'
+import { slugifyString } from 'utils'
 import { CreateCategoryDto } from './dto/create-category.dto'
 import { UpdateCategoryDto } from './dto/update-category.dto'
-import { OffsetPaginatedResponseDto } from 'core'
 
 @Injectable()
 export class CategoriesService {
@@ -232,7 +232,7 @@ export class CategoriesService {
     const { name, slug, parentId, ...rest } = createCategoryDto
 
     // Generate slug if not provided
-    const finalSlug = slug || slugify(name, { lower: true, strict: true })
+    const finalSlug = slug || slugifyString(name)
 
     // Check if slug already exists
     const existingSlug = await this.prismaService.category.findUnique({
