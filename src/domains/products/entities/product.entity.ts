@@ -2,7 +2,7 @@ import { Attribute } from 'domains/attributes/entities/attribute.entity'
 import { Brand } from 'domains/brands/entities/brand.entity'
 import { Category } from 'domains/categories/entities/category.entity'
 import { CountryOfOrigin } from 'domains/country-of-origin/entities/country-of-origin.entity'
-import { AttributeType, ProductStatus } from 'enums'
+import { ProductStatus } from 'enums'
 
 export class Product {
   id: string

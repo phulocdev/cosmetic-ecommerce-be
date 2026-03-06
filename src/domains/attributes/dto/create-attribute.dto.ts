@@ -7,7 +7,7 @@ import {
   IsEnum,
   IsBoolean
 } from 'class-validator'
-import { AttributeType } from 'enums'
+import { AttributeDataType } from 'enums'
 
 export class CreateAttributeDto {
   @MaxLength(255, { message: 'Name must be at most 255 characters' })
@@ -22,19 +22,9 @@ export class CreateAttributeDto {
   @IsOptional()
   slug?: string
 
-  @IsEnum(AttributeType, {
-    message: `type must be a valid AttributeType: ${Object.values(AttributeType).join(', ')}`
-  })
-  @IsOptional()
-  type?: AttributeType // enum: COLOR, SIZE, TEXT, NUMBER
-
   @IsBoolean({ message: 'isGlobalFilter must be a boolean' })
   @IsOptional()
   isGlobalFilter?: boolean // Show on /collections/all?
-
-  @IsString({ message: 'filterGroup must be a string' })
-  @IsOptional()
-  filterGroup?: string
 
   @IsString({ message: 'unit must be a string' })
   @IsOptional()

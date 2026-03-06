@@ -15,6 +15,7 @@ import { DatabaseModule } from './database/database.module'
 import { BrandsModule } from './domains/brands/brands.module'
 import { CountryOfOriginModule } from './domains/country-of-origin/country-of-origin.module'
 import { AttributesModule } from './domains/attributes/attributes.module';
+import { UploadModule } from './domains/upload/upload.module';
 @Module({
   imports: [
     // Core Modules
@@ -46,7 +47,8 @@ import { AttributesModule } from './domains/attributes/attributes.module';
     DatabaseModule,
     BrandsModule,
     CountryOfOriginModule,
-    AttributesModule
+    AttributesModule,
+    UploadModule
   ],
   controllers: [AppController],
   providers: [AppService]

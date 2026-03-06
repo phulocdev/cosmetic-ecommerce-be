@@ -29,12 +29,11 @@ export enum ProductStatus {
   ARCHIVED = 'ARCHIVED'
 }
 
-export enum AttributeType {
-  COLOR = 'COLOR',
-  SIZE = 'SIZE',
+export enum AttributeDataType {
   TEXT = 'TEXT',
   NUMBER = 'NUMBER',
-  BOOLEAN = 'BOOLEAN'
+  BOOLEAN = 'BOOLEAN',
+  COLOR = 'COLOR'
 }
 
 export enum FilterDisplayType {

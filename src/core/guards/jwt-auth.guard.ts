@@ -1,5 +1,11 @@
 // src/auth/guards/jwt-auth.guard.ts
-import { Injectable, ExecutionContext, Inject, UnauthorizedException } from '@nestjs/common'
+import {
+  Injectable,
+  ExecutionContext,
+  Inject,
+  UnauthorizedException,
+  BadRequestException
+} from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { TokenExpiredError } from '@nestjs/jwt'
 import { AuthGuard } from '@nestjs/passport'
@@ -33,7 +39,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest()
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(request)
     if (!token) {
-      throw new UnauthorizedException('Access token is required')
+      throw new BadRequestException('Access token is required')
     }
 
     return super.canActivate(context)

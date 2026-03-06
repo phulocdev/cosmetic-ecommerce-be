@@ -1,5 +1,13 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength
+} from 'class-validator'
 
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Laptops', description: 'Category name' })
@@ -9,7 +17,10 @@ export class CreateCategoryDto {
   @IsNotEmpty({ message: 'Name is required' })
   name: string
 
-  @ApiPropertyOptional({ example: 'laptops', description: 'URL-friendly slug (auto-generated if not provided)' })
+  @ApiPropertyOptional({
+    example: 'laptops',
+    description: 'URL-friendly slug (auto-generated if not provided)'
+  })
   @MaxLength(50, { message: 'Slug must be at most 50 characters long' })
   @MinLength(1, { message: 'Slug must be at least 1 character long' })
   @IsString({ message: 'Slug must be a string' })
@@ -24,7 +35,10 @@ export class CreateCategoryDto {
   @IsOptional()
   parentId?: string
 
-  @ApiPropertyOptional({ example: 'Browse our collection of laptops', description: 'Category description' })
+  @ApiPropertyOptional({
+    example: 'Browse our collection of laptops',
+    description: 'Category description'
+  })
   @MaxLength(1000, { message: 'Description must be at most 1000 characters long' })
   @IsString({ message: 'Description must be a string' })
   @IsOptional()
@@ -36,7 +50,10 @@ export class CreateCategoryDto {
   isActive?: boolean
 
   // SEO fields
-  @ApiPropertyOptional({ example: 'Buy Laptops Online | Best Prices', description: 'Meta title for SEO' })
+  @ApiPropertyOptional({
+    example: 'Buy Laptops Online | Best Prices',
+    description: 'Meta title for SEO'
+  })
   @MaxLength(200, { message: 'Meta title must be at most 200 characters long' })
   @IsString({ message: 'Meta title must be a string' })
   @IsOptional()

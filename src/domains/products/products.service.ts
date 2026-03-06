@@ -13,7 +13,7 @@ import { InvalidateFilterCacheService } from 'domains/products/invalidate-filter
 import { UpdateProductService } from 'domains/products/update-product.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
 import { PaginationType } from 'enums'
-import { slugifyString } from 'utils'
+import { slugifyString, UtcDateRange } from 'utils'
 
 @Injectable()
 export class ProductsService {
@@ -79,15 +79,15 @@ export class ProductsService {
       }
 
       // Create product attributes
-      if (createProductDto.attributes && createProductDto.attributes.length > 0) {
-        await tx.productAttribute.createMany({
-          data: createProductDto.attributes.map((attr) => ({
-            productId: createdProduct.id,
-            attributeId: attr.attributeId,
-            isRequired: attr.isRequired ?? true
-          }))
-        })
-      }
+      // if (createProductDto.attributes && createProductDto.attributes.length > 0) {
+      //   await tx.productAttribute.createMany({
+      //     data: createProductDto.attributes.map((attr) => ({
+      //       productId: createdProduct.id,
+      //       attributeId: attr.attributeId,
+      //       isRequired: attr.isRequired ?? true
+      //     }))
+      //   })
+      // }
 
       // Create product variants with their attribute values and images
       if (createProductDto.variants && createProductDto.variants.length > 0) {
@@ -127,15 +127,15 @@ export class ProductsService {
           //   }
           // })
 
-          if (variant.images && variant.images.length > 0) {
-            await tx.variantImage.createMany({
-              data: variant.images.map((img) => ({
-                variantId: createdVariant.id,
-                url: img.url,
-                altText: img.altText || null
-              }))
-            })
-          }
+          // if (variant.images && variant.images.length > 0) {
+          //   await tx.variantImage.createMany({
+          //     data: variant.images.map((img) => ({
+          //       variantId: createdVariant.id,
+          //       url: img.url,
+          //       altText: img.altText || null
+          //     }))
+          //   })
+          // }
         }
       }
 
@@ -164,15 +164,15 @@ export class ProductsService {
           }
         },
         images: true,
-        attributes: {
-          include: {
-            attribute: {
-              include: {
-                values: true
-              }
-            }
-          }
-        },
+        // attributes: {
+        //   include: {
+        //     attribute: {
+        //       include: {
+        //         values: true
+        //       }
+        //     }
+        //   }
+        // },
         variants: {
           include: {
             attributeValues: {
@@ -183,8 +183,7 @@ export class ProductsService {
                   }
                 }
               }
-            },
-            images: true
+            }
           }
         }
       }
@@ -208,11 +207,10 @@ export class ProductsService {
       include: {
         categories: true,
         images: true,
-        attributes: true,
+        // attributes: true,
         variants: {
           include: {
-            attributeValues: true,
-            images: true
+            attributeValues: true
           }
         }
       }
@@ -274,9 +272,9 @@ export class ProductsService {
       }
 
       // Handle product attributes
-      if (updateProductDto.attributes) {
-        await this.updateProductService.updateProductAttributes(tx, id, updateProductDto.attributes)
-      }
+      // if (updateProductDto.attributes) {
+      //   await this.updateProductService.updateProductAttributes(tx, id, updateProductDto.attributes)
+      // }
 
       // Handle product variants
       if (updateProductDto.variants) {
@@ -298,15 +296,16 @@ export class ProductsService {
    * Find all products with flexible filtering and pagination
    */
   async findAll(
-    query: ProductQueryDto
+    query: ProductQueryDto,
+    utcDateRange?: UtcDateRange
   ): Promise<OffsetPaginatedProductListResponse | CursorPaginatedProductListResponse> {
     // Determine pagination type
     const paginationType = query.paginationType || PaginationType.OFFSET
 
     if (paginationType === PaginationType.CURSOR) {
-      return this.findAllProductService.findAllWithCursorPagination(query)
+      return this.findAllProductService.findAllWithCursorPagination(query, utcDateRange)
     } else {
-      return this.findAllProductService.findAllWithOffsetPagination(query)
+      return this.findAllProductService.findAllWithOffsetPagination(query, utcDateRange)
     }
   }
 }

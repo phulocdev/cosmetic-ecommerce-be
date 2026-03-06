@@ -92,7 +92,7 @@ import { TerminusModule } from '@nestjs/terminus'
       useValue: new ValidationPipe({
         whitelist: true, // strip or remove properties that do not have any decorators
         transform: true, // automatically transform payloads to DTO instances
-        forbidNonWhitelisted: true, // throw error on unexpected properties in DTO
+        // forbidNonWhitelisted: true, // throw error on unexpected properties in DTO
         transformOptions: { enableImplicitConversion: true },
         stopAtFirstError: true,
         validationError: {

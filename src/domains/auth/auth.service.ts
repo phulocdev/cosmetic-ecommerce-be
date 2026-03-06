@@ -115,20 +115,17 @@ export class AuthService {
       where: { email: loginDto.email }
     })
 
-    if (!user || !user.isActive) {
-      if (ipAddress) {
-        await this.recordFailedLogin(loginDto.email, ipAddress)
-      }
-      throw new UnauthorizedException('Invalid credentials')
-    }
-
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password)
 
-    if (!isPasswordValid) {
+    if (!user || !isPasswordValid) {
       if (ipAddress) {
         await this.recordFailedLogin(loginDto.email, ipAddress)
       }
-      throw new UnauthorizedException('Invalid credentials')
+      throw new BadRequestException('Invalid credentials')
+    }
+
+    if (!user.isActive) {
+      throw new BadRequestException('User is not active')
     }
 
     // Clear failed attempts on successful login

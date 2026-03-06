@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { OffsetPaginatedResponseDto } from 'core'
 
-// Category entity representation for API Documentation (Swagger) and type definitions for response type of service methods
 export class Category {
   @ApiProperty()
   id: string

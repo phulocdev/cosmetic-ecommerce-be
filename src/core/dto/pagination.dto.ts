@@ -22,7 +22,9 @@ export class PaginationQueryDto {
     description: 'Pagination strategy to use'
   })
   @IsEnum(PaginationType, {
-    message: `Pagination type must be a valid PaginationType ${Object.values(PaginationType).join(', ')}`
+    message: `Pagination type must be a valid PaginationType ${Object.values(PaginationType).join(
+      ', '
+    )}`
   })
   @IsOptional()
   paginationType?: PaginationType = PaginationType.OFFSET
@@ -145,7 +147,17 @@ export class OffsetPaginatedResponseDto<T> {
   @ApiProperty({ type: OffsetPaginationMetaDto })
   meta: OffsetPaginationMetaDto
 
-  constructor({ items, total, page, limit }: { items: T[]; total: number; page: number; limit: number }) {
+  constructor({
+    items,
+    total,
+    page,
+    limit
+  }: {
+    items: T[]
+    total: number
+    page: number
+    limit: number
+  }) {
     this.items = items
     const totalPages = Math.ceil(total / limit)
     this.meta = {

@@ -290,7 +290,8 @@ export class CategoriesService {
       isActive,
       depth,
       includeChildren,
-      includeProductCount
+      includeProductCount,
+      includeParent
     } = query
 
     const skip = (page - 1) * limit
@@ -331,6 +332,10 @@ export class CategoriesService {
       include._count = {
         select: { products: true }
       }
+    }
+
+    if (includeParent) {
+      include.parent = true
     }
 
     // Execute queries
@@ -542,6 +547,10 @@ export class CategoriesService {
       updateCategoryDto.parentId !== undefined && // if updateCategoryDto.parentId is null -> move to root
       updateCategoryDto.parentId !== category.parentId
     ) {
+      await this.prismaService.category.update({
+        where: { id },
+        data: updateCategoryDto
+      })
       return this.moveCategory(id, { newParentId: updateCategoryDto.parentId })
     }
 

@@ -11,7 +11,10 @@ import {
   IsOptional,
   IsString,
   IsUUID,
-  Min
+  Max,
+  MaxLength,
+  Min,
+  MinLength
 } from 'class-validator'
 import {
   CursorPaginatedResponseDto,
@@ -20,6 +23,7 @@ import {
 } from 'core/dto/pagination.dto'
 import { ProductSortBy, ProductStatus, SortOrder } from 'enums'
 import { Product } from '@prisma/client'
+import { DateRangeQueryDto } from 'core/dto/date-range-query.dto'
 
 /**
  * Request DTOs
@@ -67,26 +71,36 @@ export class StockRangeDto {
  * Base query parameters for product filtering
  */
 export class ProductQueryDto extends PaginationQueryDto {
-  // Text search
+  // Text
   @ApiPropertyOptional({
     example: 'cotton shirt',
     description: 'Search in product name, description, or code'
   })
+  @MaxLength(255, { message: 'Search query must be at most 255 characters' })
   @IsString({ message: 'Search query must be a string' })
   @IsOptional()
   search?: string
 
   // Status filter
   @ApiPropertyOptional({
+    type: [String],
     enum: ProductStatus,
     enumName: 'ProductStatus',
-    example: ProductStatus.PUBLISHED
+    example: [ProductStatus.PUBLISHED, ProductStatus.DRAFT],
+    description: 'Filter by product statuses (OR logic)'
   })
+  @IsArray({ message: 'Status must be an array' })
   @IsEnum(ProductStatus, {
-    message: `Status must be a valid ProductStatus: ${Object.values(ProductStatus).join(', ')}`
+    each: true,
+    message: `Each status must be a valid ProductStatus: ${Object.values(ProductStatus).join(', ')}`
+  })
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') return value.split(',')
+    return value
   })
   @IsOptional()
-  status?: ProductStatus
+  status?: ProductStatus[]
 
   // Category filters
   @ApiPropertyOptional({

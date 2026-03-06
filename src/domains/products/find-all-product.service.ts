@@ -9,6 +9,7 @@ import {
 } from 'domains/products/dto/find-all-product.dto'
 import { ProductSortBy, SortOrder } from 'enums'
 import { CursorData } from 'types'
+import { UtcDateRange } from 'utils'
 
 @Injectable()
 export class FindAllProductService {
@@ -29,14 +30,25 @@ export class FindAllProductService {
    * - Not suitable for real-time feeds
    */
   async findAllWithOffsetPagination(
-    query: ProductQueryDto
+    query: ProductQueryDto,
+    utcDateRange?: UtcDateRange
   ): Promise<OffsetPaginatedProductListResponse> {
     const page = query.page || 1
     const limit = query.limit || 20
     const skip = (page - 1) * limit
 
-    // Build WHERE clause
-    const where = this.buildWhereClause(query)
+    // Build WHERE clause with date range if provided
+    let where = this.buildWhereClause(query)
+
+    if (utcDateRange) {
+      where = {
+        ...where,
+        createdAt: {
+          gte: utcDateRange.from,
+          lte: utcDateRange.to
+        }
+      }
+    }
 
     // Build ORDER BY clause
     const orderBy = this.buildOrderByClause(query.sortBy, query.sortOrder)
@@ -81,7 +93,8 @@ export class FindAllProductService {
    * - Requires indexed sort columns
    */
   async findAllWithCursorPagination(
-    query: ProductQueryDto & PaginationQueryDto
+    query: ProductQueryDto & PaginationQueryDto,
+    utcDateRange?: UtcDateRange
   ): Promise<CursorPaginatedProductListResponse> {
     const limit = query.limit || 20
     const cursor = query.cursor
@@ -100,7 +113,18 @@ export class FindAllProductService {
 
     // Build WHERE clause
     const baseWhere = this.buildWhereClause(query)
-    const where = this.buildCursorWhereClause(baseWhere, cursorData, sortBy, sortOrder)
+    let where = this.buildCursorWhereClause(baseWhere, cursorData, sortBy, sortOrder)
+
+    // Add date range filter if provided
+    if (utcDateRange) {
+      where = {
+        ...where,
+        createdAt: {
+          gte: utcDateRange.from,
+          lte: utcDateRange.to
+        }
+      }
+    }
 
     // Build ORDER BY clause
     const orderBy = this.buildOrderByClause(sortBy, sortOrder)
@@ -167,7 +191,7 @@ export class FindAllProductService {
 
     // Status filter
     if (query.status) {
-      ;(where.AND as any[]).push({ status: query.status })
+      ;(where.AND as any[]).push({ status: { in: query.status } })
     }
 
     // Category filters
@@ -521,17 +545,17 @@ export class FindAllProductService {
       include.images = true
     }
 
-    if (query.includeAttributes) {
-      include.attributes = {
-        include: {
-          attribute: {
-            include: {
-              values: true
-            }
-          }
-        }
-      }
-    }
+    // if (query.includeAttributes) {
+    //   include.attributes = {
+    //     include: {
+    //       attribute: {
+    //         include: {
+    //           values: true
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
     if (query.includeVariants) {
       include.variants = {
@@ -544,8 +568,8 @@ export class FindAllProductService {
                 }
               }
             }
-          },
-          images: true
+          }
+          // images: true
         }
       }
     }

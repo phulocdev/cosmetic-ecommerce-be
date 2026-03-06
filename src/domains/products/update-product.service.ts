@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Prisma, ProductImage, ProductVariant, VariantImage } from '@prisma/client'
+import { Prisma, ProductImage, ProductVariant } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
 import {
   UpdateProductAttributeDto,
@@ -111,57 +111,57 @@ export class UpdateProductService {
   /**
    * Update product attributes
    */
-  async updateProductAttributes(
-    tx: Prisma.TransactionClient,
-    productId: string,
-    attributes: UpdateProductAttributeDto[]
-  ) {
-    for (const attribute of attributes) {
-      if (attribute._delete && attribute.attributeId) {
-        // Delete specific attribute
-        await tx.productAttribute.deleteMany({
-          where: {
-            productId,
-            attributeId: attribute.attributeId
-          }
-        })
-      } else if (attribute.attributeId) {
-        // Check if association exists
-        const existing = await tx.productAttribute.findUnique({
-          where: {
-            productId_attributeId: {
-              productId,
-              attributeId: attribute.attributeId
-            }
-          }
-        })
+  // async updateProductAttributes(
+  //   tx: Prisma.TransactionClient,
+  //   productId: string,
+  //   attributes: UpdateProductAttributeDto[]
+  // ) {
+  //   for (const attribute of attributes) {
+  //     if (attribute._delete && attribute.attributeId) {
+  //       // Delete specific attribute
+  //       await tx.productAttribute.deleteMany({
+  //         where: {
+  //           productId,
+  //           attributeId: attribute.attributeId
+  //         }
+  //       })
+  //     } else if (attribute.attributeId) {
+  //       // Check if association exists
+  //       const existing = await tx.productAttribute.findUnique({
+  //         where: {
+  //           productId_attributeId: {
+  //             productId,
+  //             attributeId: attribute.attributeId
+  //           }
+  //         }
+  //       })
 
-        if (existing) {
-          // Update existing association
-          await tx.productAttribute.update({
-            where: {
-              productId_attributeId: {
-                productId,
-                attributeId: attribute.attributeId
-              }
-            },
-            data: {
-              isRequired: attribute.isRequired ?? existing.isRequired
-            }
-          })
-        } else {
-          // Create new association
-          await tx.productAttribute.create({
-            data: {
-              productId,
-              attributeId: attribute.attributeId,
-              isRequired: attribute.isRequired ?? true
-            }
-          })
-        }
-      }
-    }
-  }
+  //       if (existing) {
+  //         // Update existing association
+  //         await tx.productAttribute.update({
+  //           where: {
+  //             productId_attributeId: {
+  //               productId,
+  //               attributeId: attribute.attributeId
+  //             }
+  //           },
+  //           data: {
+  //             isRequired: attribute.isRequired ?? existing.isRequired
+  //           }
+  //         })
+  //       } else {
+  //         // Create new association
+  //         await tx.productAttribute.create({
+  //           data: {
+  //             productId,
+  //             attributeId: attribute.attributeId,
+  //             isRequired: attribute.isRequired ?? true
+  //           }
+  //         })
+  //       }
+  //     }
+  //   }
+  // }
 
   /**
    * Update product variants
@@ -212,9 +212,9 @@ export class UpdateProductService {
         }
 
         // Handle variant images
-        if (variant.images) {
-          await this.updateVariantImages(tx, variant.id, variant.images)
-        }
+        // if (variant.images) {
+        //   await this.updateVariantImages(tx, variant.id, variant.images)
+        // }
       } else {
         // Create new variant
         const createdVariant = await tx.productVariant.create({
@@ -247,20 +247,20 @@ export class UpdateProductService {
           }
         }
 
-        // Create variant images
-        if (variant.images) {
-          for (const img of variant.images) {
-            if (img.url && !img._delete) {
-              await tx.variantImage.create({
-                data: {
-                  variantId: createdVariant.id,
-                  url: img.url,
-                  altText: img.altText || null
-                }
-              })
-            }
-          }
-        }
+        // // Create variant images
+        // if (variant.images) {
+        //   for (const img of variant.images) {
+        //     if (img.url && !img._delete) {
+        //       await tx.variantImage.create({
+        //         data: {
+        //           variantId: createdVariant.id,
+        //           url: img.url,
+        //           altText: img.altText || null
+        //         }
+        //       })
+        //     }
+        //   }
+        // }
       }
     }
   }
@@ -313,39 +313,39 @@ export class UpdateProductService {
   /**
    * Update variant images
    */
-  async updateVariantImages(
-    tx: Prisma.TransactionClient,
-    variantId: string,
-    images: UpdateVariantImageDto[]
-  ) {
-    for (const image of images) {
-      if (image._delete && image.id) {
-        // Delete specific image
-        await tx.variantImage.delete({
-          where: { id: image.id }
-        })
-      } else if (image.id) {
-        // Update existing image
-        const updateData: Partial<VariantImage> = {}
-        if (image.url !== undefined) updateData.url = image.url
-        if (image.altText !== undefined) updateData.altText = image.altText
+  // async updateVariantImages(
+  //   tx: Prisma.TransactionClient,
+  //   variantId: string,
+  //   images: UpdateVariantImageDto[]
+  // ) {
+  //   for (const image of images) {
+  //     if (image._delete && image.id) {
+  //       // Delete specific image
+  //       await tx.variantImage.delete({
+  //         where: { id: image.id }
+  //       })
+  //     } else if (image.id) {
+  //       // Update existing image
+  //       const updateData: Partial<VariantImage> = {}
+  //       if (image.url !== undefined) updateData.url = image.url
+  //       if (image.altText !== undefined) updateData.altText = image.altText
 
-        if (Object.keys(updateData).length > 0) {
-          await tx.variantImage.update({
-            where: { id: image.id },
-            data: updateData
-          })
-        }
-      } else if (image.url) {
-        // Create new image
-        await tx.variantImage.create({
-          data: {
-            variantId,
-            url: image.url,
-            altText: image.altText || null
-          }
-        })
-      }
-    }
-  }
+  //       if (Object.keys(updateData).length > 0) {
+  //         await tx.variantImage.update({
+  //           where: { id: image.id },
+  //           data: updateData
+  //         })
+  //       }
+  //     } else if (image.url) {
+  //       // Create new image
+  //       await tx.variantImage.create({
+  //         data: {
+  //           variantId,
+  //           url: image.url,
+  //           altText: image.altText || null
+  //         }
+  //       })
+  //     }
+  //   }
+  // }
 }

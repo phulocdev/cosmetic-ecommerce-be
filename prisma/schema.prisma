@@ -82,7 +82,7 @@ model Product {
   brand             Brand           @relation(fields: [brandId], references: [id])
   countryOfOrigin   CountryOfOrigin @relation(fields: [countryOriginId], references: [id])
   variants          ProductVariant[]
-  attributes        ProductAttribute[]
+  // attributes        ProductAttribute[]
   images            ProductImage[]
 
   createdAt DateTime @default(now())
@@ -106,22 +106,22 @@ model Product {
   @@map("Product")
 }
 
-model ProductAttribute {
-  id        String @id @default(uuid())
-  productId String
-  attributeId String
+// model ProductAttribute {
+//   id        String @id @default(uuid())
+//   productId String
+//   attributeId String
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+//   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+//   attribute Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
-  isRequired  Boolean   @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime? @updatedAt
+//   // isRequired  Boolean   @default(true)
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime? @updatedAt
 
-  @@unique([productId, attributeId])
-  @@index([productId])
-  @@map("ProductAttribute")
-}
+//   @@unique([productId, attributeId])
+//   @@index([productId])
+//   @@map("ProductAttribute")
+// }
 
 // model ProductAttributeSku {
 //   id                 String @id @default(uuid())
@@ -151,7 +151,7 @@ model ProductVariant {
   barcode      String @unique
   costPrice    Decimal @db.Decimal(10, 2)
   sellingPrice Decimal @db.Decimal(10, 2)
-  stockOnHand  Int // inventory quantity
+  stockOnHand  Int?   @default(0) // inventory quantity
   imageUrl     String @default("")
   lowStockThreshold Int @default(0)
   maxStockThreshold Int @default(0)
@@ -159,7 +159,7 @@ model ProductVariant {
 
   product                  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   attributeValues          VariantAttributeValue[]
-  image                    VariantImage[]
+  // image                    VariantImage[]
   inboundTransactionItems  InboundTransactionDetail[]
   outboundTransactionItems OutboundTransactionDetail[]
   orderDetails             OrderDetail[]
@@ -180,21 +180,18 @@ model ProductVariant {
   @@map("ProductVariant")
 }
 
-
 model Category {
   id          String    @id @default(uuid())
   name        String
   slug        String    @unique
   description String?   @default("")
-  parentId    String?   
+  parentId    String?  // default value of this field is null -> top-level category, otherwise it's a child category 
   
   // Materialized path for performance
   path        String    @default("/")
   depth       Int       @default(0)
   isActive    Boolean   @default(true)
-  
-  // For sorting within same level
-  // sortOrder   Int       @default(0)
+  facetInheritanceMode FacetInheritanceMode @default(INHERIT) // INHERIT, OVERRIDE, MERGE
   
   parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
@@ -217,6 +214,12 @@ model Category {
   @@index([slug])
   @@index([isActive])
   @@map("Category")
+}
+
+enum FacetInheritanceMode {
+  INHERIT   // Child categories inherit parent's attributes unless they define their own
+  OVERRIDE  // Child categories do not inherit any attributes from parent
+  MERGE     // Child categories inherit parent's attributes and can add their own (union of both)
 }
 
 model Brand {
@@ -577,7 +580,7 @@ model PasswordResetToken {
 model ProductCategory {
   productId   String
   categoryId  String
-  isPrimary   Boolean   @default(false) // Primary category for breadcrumbs
+  isPrimary   Boolean   @default(false) // Indicates the main category for the product (for SEO and default filtering)
   
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -595,15 +598,15 @@ model Attribute {
   id          String              @id @default(uuid())
   name        String              @unique // "Color", "Size", "Material" / "Màu sắc" / "Kích thước" / "Chất liệu"
   slug        String              @unique
-  type        AttributeType?      @default(TEXT)       // COLOR, SIZE, TEXT, NUMBER
+  // dataType    AttributeDataType   @default(TEXT) // TEXT, NUMBER, BOOLEAN, COLOR
 
   // Filter-specific fields
-  isGlobalFilter  Boolean @default(false) // Show on /collections/all?
-  filterGroup     String? // Group filters: "Specifications", "Features", etc.
-  unit            String? // "cm", "kg", "GB" for range filters
+  isGlobalFilter  Boolean @default(false) // Show on /collections/all? - True = available across all categories
+  displayName     String? // Override name in filter UI: "Color" → "Shirt Color"
+  // unit            String? // "cm", "kg", "GB" for range filters
 
   values      AttributeValue[]
-  products    ProductAttribute[]
+  // products    ProductAttribute[]
   categoryAttributes  CategoryAttribute[] 
 
   createdAt   DateTime            @default(now())
@@ -616,25 +619,30 @@ model Attribute {
   @@map("Attribute")
 }
 
-enum AttributeType {
+enum AttributeDataType {
+  TEXT // Default type for general attributes - String
+  NUMBER 
+  BOOLEAN 
   COLOR
-  SIZE
-  TEXT
-  NUMBER
-  BOOLEAN
 }
 
 model AttributeValue {
   id              String                    @id @default(uuid())
   attributeId     String
-  attribute       Attribute                 @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
   value           String                    // "Red", "Large", "Cotton"
-  hexColor        String?                   // For color swatches: "#FF0000"
-  variants        VariantAttributeValue[]
+  // displayName     String?                   // For display purposes: "Red" → "Bright Red"
+  // displayOrder       Int     @default(0)     // For ordering values in filter UI
+  // hexColor        String?                   // For color swatches: "#FF0000"  
+  // imageUrl        String?                   // Optional image for this value (e.g. pattern swatch: (pattern/texture))
+
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
   deletedAt DateTime?
   isDeleted Boolean @default(false)
+
+  variants        VariantAttributeValue[]
+  attribute       Attribute                 @relation(fields: [attributeId], references: [id], onDelete: Cascade)
 
   @@unique([attributeId, value])
   @@index([attributeId])
@@ -649,6 +657,7 @@ model VariantAttributeValue {
 
   variant          ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
   attributeValue   AttributeValue  @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+  // rawValue        String          @default("") // For quick access without joining AttributeValue (e.g. "Red", "Large")
 
   deletedAt DateTime?
   isDeleted Boolean @default(false)
@@ -664,6 +673,7 @@ model ProductImage {
   productId String
   url       String
   altText   String?
+  displayOrder Int? @default(0) // For ordering images in the gallery
 
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -675,21 +685,21 @@ model ProductImage {
   @@map("ProductImage")
 }
 
-model VariantImage {
-  id        String         @id @default(uuid())
-  variantId String
-  url       String
-  altText   String?
+// model VariantImage {
+//   id        String         @id @default(uuid())
+//   variantId String
+//   url       String
+//   altText   String?
   
-  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+//   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime       @default(now())
-  deletedAt DateTime?
-  isDeleted Boolean @default(false)
+//   createdAt DateTime       @default(now())
+//   deletedAt DateTime?
+//   isDeleted Boolean @default(false)
 
-  @@index([variantId])
-  @@map("VariantImage")
-}
+//   @@index([variantId])
+//   @@map("VariantImage")
+// }
 
 // (Filter Configuration)
 model CategoryAttribute {
@@ -697,20 +707,19 @@ model CategoryAttribute {
   categoryId  String
   attributeId String
   
-  displayName     String?    // Override attribute name: "Color" → "Shirt Color"
-  displayOrder    Int     @default(0)     // Order in filter UI
-  filterType      FilterDisplayType @default(CHECKBOX) // CHECKBOX, RADIO, SLIDER, SWATCH
+  // displayName   String? // Override attribute name in filter UI: "Color" → "Shirt Color"
+  // displayOrder    Int     @default(0)     // Order in filter UI
+  // filterType      FilterDisplayType @default(CHECKBOX) // CHECKBOX, RADIO, SLIDER, SWATCH ~ displayType
   
   // Behavior flags
   isFilterable    Boolean @default(true)  // Can this be used as a filter?
-  isRequired      Boolean    @default(false)  // For product creation
+  isRequired      Boolean    @default(false)  // Required when adding a product to this category 
+  // isCollapsed    Boolean @default(false)  // Should this filter be collapsed by default in the UI?
+  // showSearchBox Boolean @default(false)  // Show search box for long lists of values (e.g. brands, countries)
 
   // Inheritance: if true, child categories inherit this attribute
   inheritToChildren Boolean @default(true)
   
-  // Advanced: Filter grouping
-  filterGroup     String?    // "Specifications", "Style", "Features"
-
   category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   
@@ -725,14 +734,13 @@ model CategoryAttribute {
   @@map("CategoryAttribute")
 }
 
-enum FilterDisplayType {
-  CHECKBOX      // Multi-select
-  RADIO         // Single-select
-  SLIDER        // Range (for numbers/prices)
-  SWATCH        // Color swatches
-  DROPDOWN      // Dropdown select
-  TOGGLE        // Boolean (On Sale, Free Shipping)
-}
+// enum FilterDisplayType {
+//   CHECKBOX      // Multi-select
+//   RANGE        // Range (for numbers/prices)
+//   SWATCH        // Color swatches
+//   RADIO         // Single-select
+//   TOGGLE        // Boolean (On Sale, Free Shipping)
+// }
 
 // ============================================
 // FILTER CACHE (Performance Layer)

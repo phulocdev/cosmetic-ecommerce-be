@@ -28,6 +28,10 @@ export class CreateProductImageDto {
   @IsNotEmpty({ message: 'URL is required' })
   url: string
 
+  @IsInt({ message: 'Display order must be an integer' })
+  @IsNotEmpty({ message: 'Display order is required' })
+  displayOrder: number
+
   @ApiPropertyOptional({ example: 'Product main image' })
   @IsString({ message: 'Alt text must be a string' })
   @MaxLength(255, { message: 'Alt text must be at most 255 characters' })
@@ -106,6 +110,7 @@ export class CreateProductVariantDto {
   @ApiProperty({ example: 100, description: 'Stock quantity' })
   @IsInt({ message: 'Stock on hand must be an integer' })
   @Min(0, { message: 'Stock on hand must be at least 0' })
+  @IsOptional()
   stockOnHand: number
 
   @ApiPropertyOptional({ example: 'https://example.com/variant.jpg' })
@@ -141,15 +146,15 @@ export class CreateProductVariantDto {
   @ArrayMinSize(1, { message: 'At least one attribute value is required' })
   attributeValues: CreateVariantAttributeValueDto[]
 
-  @ApiPropertyOptional({
-    type: [CreateVariantImageDto],
-    description: 'Additional images for this variant'
-  })
-  @IsArray({ message: 'Images must be an array' })
-  @ValidateNested({ each: true })
-  @Type(() => CreateVariantImageDto)
-  @IsOptional()
-  images?: CreateVariantImageDto[]
+  // @ApiPropertyOptional({
+  //   type: [CreateVariantImageDto],
+  //   description: 'Additional images for this variant'
+  // })
+  // @IsArray({ message: 'Images must be an array' })
+  // @ValidateNested({ each: true })
+  // @Type(() => CreateVariantImageDto)
+  // @IsOptional()
+  // images?: CreateVariantImageDto[]
 }
 
 /**

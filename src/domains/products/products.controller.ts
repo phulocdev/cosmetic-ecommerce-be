@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Param,
   Patch,
   Post,
@@ -20,14 +21,12 @@ import {
 import { ProductsService } from 'domains/products/products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
-import { ProductSeedService } from 'domains/products/product-seed.service'
+import { DateRangePipe, ParsedDateRange } from 'core/pipes/date-range.pipe'
 
 @Controller('products')
 export class ProductsController {
-  constructor(
-    private readonly productsService: ProductsService,
-    private readonly productSeedService: ProductSeedService
-  ) {}
+  private readonly logger = new Logger(ProductsController.name)
+  constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -154,9 +153,10 @@ export class ProductsController {
     }
   })
   findAll(
-    @Query() query: ProductQueryDto
+    @Query() query: ProductQueryDto,
+    @Query(DateRangePipe) { dateRange }: ParsedDateRange
   ): Promise<OffsetPaginatedProductListResponse | CursorPaginatedProductListResponse> {
-    return this.productsService.findAll(query)
+    return this.productsService.findAll(query, dateRange)
   }
 
   // @Delete(':id')

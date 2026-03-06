@@ -1,11 +1,11 @@
-import { AttributeType } from 'enums'
+import { AttributeDataType } from 'enums'
 
 export class Attribute {
   id: string
   name: string
   slug: string
-  // type: AttributeType
-  type: string
+  dataType: string
+  // dataType: AttributeDataType
   isGlobalFilter: boolean
   filterGroup?: string
   unit?: string

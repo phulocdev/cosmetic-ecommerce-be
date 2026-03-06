@@ -40,11 +40,25 @@ export class GetCategoriesQueryDto {
   @Min(0)
   depth?: number
 
-  @ApiPropertyOptional({ example: true, description: 'Include children in response', default: false })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Include children in response',
+    default: false
+  })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includeChildren?: boolean
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Include parent category in response',
+    default: false
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  includeParent?: boolean
 
   @ApiPropertyOptional({ example: true, description: 'Include product count', default: false })
   @IsOptional()
@@ -71,7 +85,11 @@ export class GetCategoryTreeQueryDto {
   @Min(1)
   maxDepth?: number
 
-  @ApiPropertyOptional({ example: true, description: 'Include only active categories', default: true })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Include only active categories',
+    default: true
+  })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
@@ -87,7 +105,11 @@ export class GetCategoryTreeQueryDto {
   @IsEnum(CategoryTreeFormat)
   format?: CategoryTreeFormat = CategoryTreeFormat.NESTED
 
-  @ApiPropertyOptional({ example: true, description: 'Include product count for each category', default: false })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Include product count for each category',
+    default: false
+  })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
@@ -95,7 +117,10 @@ export class GetCategoryTreeQueryDto {
 }
 
 export class MoveCategoryDto {
-  @ApiPropertyOptional({ example: 'uuid-new-parent-id', description: 'New parent category ID (null for root)' })
+  @ApiPropertyOptional({
+    example: 'uuid-new-parent-id',
+    description: 'New parent category ID (null for root)'
+  })
   @IsUUID('4', { message: 'New newParentId must be a valid UUID or Null' })
   newParentId: string | null
 }
