@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { Transform } from 'class-transformer'
 import {
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsOptional,
@@ -11,7 +13,7 @@ import {
 
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Laptops', description: 'Category name' })
-  @MaxLength(50, { message: 'Name must be at most 50 characters long' })
+  @MaxLength(255, { message: 'Name must be at most 255 characters long' })
   @MinLength(1, { message: 'Name must be at least 1 character long' })
   @IsString({ message: 'Name must be a string' })
   @IsNotEmpty({ message: 'Name is required' })
@@ -21,8 +23,7 @@ export class CreateCategoryDto {
     example: 'laptops',
     description: 'URL-friendly slug (auto-generated if not provided)'
   })
-  @MaxLength(50, { message: 'Slug must be at most 50 characters long' })
-  @MinLength(1, { message: 'Slug must be at least 1 character long' })
+  @MaxLength(255, { message: 'Slug must be at most 255 characters long' })
   @IsString({ message: 'Slug must be a string' })
   @IsOptional({ message: 'Slug is required' })
   slug?: string
@@ -45,7 +46,8 @@ export class CreateCategoryDto {
   description?: string
 
   @ApiPropertyOptional({ example: true, description: 'Whether category is active', default: true })
-  @IsBoolean({ message: 'isActive must be a boolean value' })
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   isActive?: boolean
 
@@ -67,4 +69,9 @@ export class CreateCategoryDto {
   @IsString({ message: 'Meta description must be a string' })
   @IsOptional()
   metaDescription?: string
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  attributeIds?: string[]
 }

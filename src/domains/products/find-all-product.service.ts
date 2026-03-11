@@ -7,8 +7,9 @@ import {
   OffsetPaginatedProductListResponse,
   ProductQueryDto
 } from 'domains/products/dto/find-all-product.dto'
+import { Product } from 'domains/products/entities'
 import { ProductSortBy, SortOrder } from 'enums'
-import { CursorData } from 'types'
+import { ProductCursorData } from 'types'
 import { UtcDateRange } from 'utils'
 
 @Injectable()
@@ -102,7 +103,7 @@ export class FindAllProductService {
     const sortOrder = query.sortOrder || SortOrder.DESC
 
     // Decode cursor if provided
-    let cursorData: CursorData | null = null
+    let cursorData: ProductCursorData | null = null
     if (cursor) {
       try {
         cursorData = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'))
@@ -150,14 +151,14 @@ export class FindAllProductService {
     let nextCursor: string | null = null
     if (hasNextPage && products.length > 0) {
       const lastItem = products[products.length - 1]
-      nextCursor = this.encodeCursor(lastItem, sortBy)
+      nextCursor = this.encodeCursor(lastItem as any, sortBy)
     }
 
     // Generate previous cursor (simplified - based on first item)
     let previousCursor: string | null = null
     if (products.length > 0 && cursor) {
       const firstItem = products[0]
-      previousCursor = this.encodeCursor(firstItem, sortBy)
+      previousCursor = this.encodeCursor(firstItem as any, sortBy)
     }
 
     return new CursorPaginatedProductListResponse({
@@ -347,18 +348,6 @@ export class FindAllProductService {
       }
     }
 
-    // Date range filters
-    if (query.createdAfter || query.createdBefore) {
-      const dateCondition: Prisma.DateTimeFilter = {}
-      if (query.createdAfter) {
-        dateCondition.gte = query.createdAfter
-      }
-      if (query.createdBefore) {
-        dateCondition.lte = query.createdBefore
-      }
-      ;(where.AND as any[]).push({ createdAt: dateCondition })
-    }
-
     // Clean up empty AND array
     if ((where.AND as any[]).length === 0) {
       delete where.AND
@@ -372,7 +361,7 @@ export class FindAllProductService {
    */
   private buildCursorWhereClause(
     baseWhere: Prisma.ProductWhereInput,
-    cursorData: CursorData | null,
+    cursorData: ProductCursorData | null,
     sortBy: ProductSortBy,
     sortOrder: SortOrder
   ): Prisma.ProductWhereInput {
@@ -407,21 +396,21 @@ export class FindAllProductService {
         }
         break
 
-      case ProductSortBy.UPDATED_AT:
-        if (cursorData.updatedAt) {
-          cursorConditions.push({
-            OR: [
-              { updatedAt: { [operator]: cursorData.updatedAt } },
-              {
-                AND: [
-                  { updatedAt: { equals: cursorData.updatedAt } },
-                  { id: { [operator]: cursorData.id } }
-                ]
-              }
-            ]
-          })
-        }
-        break
+      // case ProductSortBy.UPDATED_AT:
+      //   if (cursorData.updatedAt) {
+      //     cursorConditions.push({
+      //       OR: [
+      //         { updatedAt: { [operator]: cursorData.updatedAt } },
+      //         {
+      //           AND: [
+      //             { updatedAt: { equals: cursorData.updatedAt } },
+      //             { id: { [operator]: cursorData.id } }
+      //           ]
+      //         }
+      //       ]
+      //     })
+      //   }
+      //   break
 
       case ProductSortBy.PRICE:
         if (cursorData.basePrice !== undefined) {
@@ -496,9 +485,6 @@ export class FindAllProductService {
       case ProductSortBy.CREATED_AT:
         orderByList.push({ createdAt: order })
         break
-      case ProductSortBy.UPDATED_AT:
-        orderByList.push({ updatedAt: order })
-        break
       case ProductSortBy.PRICE:
         orderByList.push({ basePrice: order })
         break
@@ -506,10 +492,6 @@ export class FindAllProductService {
         orderByList.push({ name: order })
         break
       case ProductSortBy.VIEWS:
-        orderByList.push({ views: order })
-        break
-      case ProductSortBy.POPULARITY:
-        // Popularity could be a computed field or based on views
         orderByList.push({ views: order })
         break
     }
@@ -580,8 +562,8 @@ export class FindAllProductService {
   /**
    * Encode cursor for pagination
    */
-  private encodeCursor(productItem: any, sortBy: ProductSortBy): string {
-    const cursorData: CursorData = {
+  private encodeCursor(productItem: Product, sortBy: ProductSortBy): string {
+    const cursorData: ProductCursorData = {
       id: productItem.id // Product ID is always included for tiebreaking
     }
 
@@ -589,11 +571,8 @@ export class FindAllProductService {
       case ProductSortBy.CREATED_AT:
         cursorData.createdAt = productItem.createdAt
         break
-      case ProductSortBy.UPDATED_AT:
-        cursorData.updatedAt = productItem.updatedAt
-        break
       case ProductSortBy.PRICE:
-        cursorData.basePrice = parseFloat(productItem.basePrice)
+        cursorData.basePrice = productItem.basePrice
         break
       case ProductSortBy.NAME:
         cursorData.name = productItem.name
@@ -629,8 +608,6 @@ export class FindAllProductService {
     if (query.maxVariantPrice !== undefined) applied.maxVariantPrice = query.maxVariantPrice
     if (query.sku) applied.sku = query.sku
     if (query.attributes) applied.attributes = query.attributes
-    if (query.createdAfter) applied.createdAfter = query.createdAfter
-    if (query.createdBefore) applied.createdBefore = query.createdBefore
     if (query.sortBy) applied.sortBy = query.sortBy
     if (query.sortOrder) applied.sortOrder = query.sortOrder
 

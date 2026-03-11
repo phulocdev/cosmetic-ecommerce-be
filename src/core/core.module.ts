@@ -93,7 +93,7 @@ import { TerminusModule } from '@nestjs/terminus'
         whitelist: true, // strip or remove properties that do not have any decorators
         transform: true, // automatically transform payloads to DTO instances
         // forbidNonWhitelisted: true, // throw error on unexpected properties in DTO
-        transformOptions: { enableImplicitConversion: true },
+        // transformOptions: { enableImplicitConversion: true }, //
         stopAtFirstError: true,
         validationError: {
           target: false, // do not include the object that was validated in the error output

@@ -188,10 +188,10 @@ model Category {
   parentId    String?  // default value of this field is null -> top-level category, otherwise it's a child category 
   
   // Materialized path for performance
-  path        String    @default("/")
+  path        String    @default("/") 
   depth       Int       @default(0)
   isActive    Boolean   @default(true)
-  facetInheritanceMode FacetInheritanceMode @default(INHERIT) // INHERIT, OVERRIDE, MERGE
+  // facetInheritanceMode FacetInheritanceMode @default(INHERIT) // INHERIT, OVERRIDE, MERGE
   
   parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
@@ -712,13 +712,13 @@ model CategoryAttribute {
   // filterType      FilterDisplayType @default(CHECKBOX) // CHECKBOX, RADIO, SLIDER, SWATCH ~ displayType
   
   // Behavior flags
-  isFilterable    Boolean @default(true)  // Can this be used as a filter?
-  isRequired      Boolean    @default(false)  // Required when adding a product to this category 
+  // isFilterable    Boolean @default(true)  // Can this be used as a filter?
+  // isRequired      Boolean    @default(false)  // Required when adding a product to this category 
   // isCollapsed    Boolean @default(false)  // Should this filter be collapsed by default in the UI?
   // showSearchBox Boolean @default(false)  // Show search box for long lists of values (e.g. brands, countries)
 
   // Inheritance: if true, child categories inherit this attribute
-  inheritToChildren Boolean @default(true)
+  // inheritToChildren Boolean @default(true)
   
   category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
@@ -729,7 +729,7 @@ model CategoryAttribute {
   isDeleted Boolean @default(false)
   
   @@unique([categoryId, attributeId])
-  @@index([categoryId, isFilterable])
+  // @@index([categoryId, isFilterable])
   @@index([attributeId])
   @@map("CategoryAttribute")
 }

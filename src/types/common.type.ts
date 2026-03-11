@@ -79,13 +79,20 @@ export interface User extends BaseEntity {
  * Are defined in the dto folder: pagination.dto.ts
  */
 
-export class CursorData {
+export class ProductCursorData {
   id: string
   createdAt?: Date
   updatedAt?: Date
   basePrice?: number
   views?: number
   name?: string
+}
+
+export class CategoryCursorData {
+  id: string
+  createdAt?: Date
+  name?: string
+  depth?: number
 }
 
 export interface TransactionManager {

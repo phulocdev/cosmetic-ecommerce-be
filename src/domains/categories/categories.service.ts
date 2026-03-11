@@ -5,10 +5,9 @@ import {
   NotFoundException
 } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { OffsetPaginatedResponseDto } from 'core'
+import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto } from 'core'
 import { PrismaService } from 'database/prisma/prisma.service'
 import {
-  CategoryTreeFormat,
   GetCategoriesQueryDto,
   GetCategoryTreeQueryDto,
   MoveCategoryDto
@@ -18,7 +17,9 @@ import {
   Category,
   CategoryTreeNode
 } from 'domains/categories/entities/category.entity'
-import { slugifyString } from 'utils'
+import { CategorySortBy, CategoryTreeFormat, PaginationType, SortOrder } from 'enums'
+import { CategoryCursorData } from 'types'
+import { slugifyString, UtcDateRange } from 'utils'
 import { CreateCategoryDto } from './dto/create-category.dto'
 import { UpdateCategoryDto } from './dto/update-category.dto'
 
@@ -30,12 +31,16 @@ export class CategoriesService {
    * Get category tree (hierarchical structure)
    */
   async getCategoryTree(query: GetCategoryTreeQueryDto): Promise<CategoryTreeNode[]> {
-    const { rootId, maxDepth, activeOnly, format, includeProductCount } = query
+    const { rootId, maxDepth, activeOnly, format, includeProductCount, isDeleted } = query
 
     const where: Prisma.CategoryWhereInput = {}
 
     if (activeOnly) {
       where.isActive = true
+    }
+
+    if (isDeleted !== undefined) {
+      where.isDeleted = isDeleted
     }
 
     if (rootId) {
@@ -75,7 +80,7 @@ export class CategoriesService {
     })
 
     if (format === CategoryTreeFormat.FLAT) {
-      return categories.map((cat: any) => ({
+      return categories.map((cat) => ({
         id: cat.id,
         name: cat.name,
         slug: cat.slug,
@@ -229,7 +234,7 @@ export class CategoriesService {
    * Create a new category
    */
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
-    const { name, slug, parentId, ...rest } = createCategoryDto
+    const { name, slug, parentId, attributeIds, ...rest } = createCategoryDto
 
     // Generate slug if not provided
     const finalSlug = slug || slugifyString(name)
@@ -271,7 +276,12 @@ export class CategoriesService {
         parentId,
         path,
         depth,
-        ...rest
+        ...rest,
+        categoryAttributes: {
+          create: (attributeIds || []).map((attributeId) => ({
+            attributeId
+          }))
+        }
       }
     })
 
@@ -279,24 +289,154 @@ export class CategoriesService {
   }
 
   /**
-   * Get paginated categories with filters
+   * Get paginated categories with filters (supports both offset and cursor pagination)
    */
-  async findAll(query: GetCategoriesQueryDto): Promise<OffsetPaginatedResponseDto<Category>> {
-    const {
-      page = 1,
-      limit = 20,
-      search,
-      parentId,
-      isActive,
-      depth,
-      includeChildren,
-      includeProductCount,
-      includeParent
-    } = query
+  async findAll(
+    query: GetCategoriesQueryDto,
+    dateRange?: UtcDateRange
+  ): Promise<OffsetPaginatedResponseDto<Category> | CursorPaginatedResponseDto<Category>> {
+    if (query.paginationType === PaginationType.CURSOR) {
+      return this.findAllWithCursorPagination(query, dateRange)
+    }
+    return this.findAllWithOffsetPagination(query, dateRange)
+  }
 
+  private async findAllWithOffsetPagination(
+    query: GetCategoriesQueryDto,
+    dateRange?: UtcDateRange
+  ): Promise<OffsetPaginatedResponseDto<Category>> {
+    const { page = 1, limit = 20, sortBy, sortOrder, includeProductCount } = query
     const skip = (page - 1) * limit
 
-    // Build where clause
+    const where = this.buildCategoryWhereClause(query)
+
+    // Apply date range filter if provided (assuming we want to filter by createdAt)
+    if (dateRange) {
+      where.createdAt = {
+        gte: dateRange.from,
+        lte: dateRange.to
+      }
+    }
+
+    const include = this.buildCategoryIncludeClause(query)
+    const orderByList = this.buildCategoryOrderByClause(sortBy, sortOrder)
+
+    const [categories, totalItems] = await Promise.all([
+      this.prismaService.category.findMany({
+        where,
+        include,
+        skip,
+        take: limit,
+        orderBy: orderByList
+      }),
+      this.prismaService.category.count({ where })
+    ])
+
+    let categoryItems = categories.map((cat) => ({
+      ...cat,
+      productCount: includeProductCount ? (cat as any)._count?.products : undefined,
+      _count: undefined
+    }))
+
+    // Sort by product count in application code after fetching (computed field)
+    if (sortBy === CategorySortBy.PRODUCT_COUNT && includeProductCount) {
+      categoryItems.sort((a, b) => {
+        const countA = a.productCount || 0
+        const countB = b.productCount || 0
+        return sortOrder === 'asc' ? countA - countB : countB - countA
+      })
+    }
+
+    return new OffsetPaginatedResponseDto<Category>({
+      items: categoryItems,
+      limit,
+      page,
+      total: totalItems
+    })
+  }
+
+  private async findAllWithCursorPagination(
+    query: GetCategoriesQueryDto,
+    dateRange?: UtcDateRange
+  ): Promise<CursorPaginatedResponseDto<Category>> {
+    const {
+      limit = 20,
+      cursor,
+      sortBy = CategorySortBy.CREATED_AT,
+      sortOrder = SortOrder.DESC
+    } = query
+
+    if (sortBy === CategorySortBy.PRODUCT_COUNT) {
+      throw new BadRequestException(
+        'Cursor-based pagination is not supported for PRODUCT_COUNT sort. Use offset pagination instead.'
+      )
+    }
+
+    // Decode cursor if provided
+    let cursorData: CategoryCursorData | null = null
+    if (cursor) {
+      try {
+        cursorData = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'))
+      } catch {
+        throw new BadRequestException('Invalid cursor format')
+      }
+    }
+
+    const baseWhere = this.buildCategoryWhereClause(query)
+    const where = this.buildCategoryCursorWhereClause(baseWhere, cursorData, sortBy, sortOrder)
+    const include = this.buildCategoryIncludeClause(query)
+    const orderByList = this.buildCategoryOrderByClause(sortBy, sortOrder)
+
+    // Apply date range filter if provided (assuming we want to filter by createdAt)
+    if (dateRange) {
+      where.createdAt = {
+        gte: dateRange.from,
+        lte: dateRange.to
+      }
+    }
+
+    // Fetch limit + 1 to check if there's a next page
+    const categories = await this.prismaService.category.findMany({
+      where,
+      include,
+      orderBy: orderByList,
+      take: limit + 1
+    })
+
+    const hasNextPage = categories.length > limit
+    if (hasNextPage) {
+      categories.pop()
+    }
+
+    const categoryItems = categories.map((cat) => ({
+      ...cat,
+      productCount: query.includeProductCount ? (cat as any)._count?.products : undefined,
+      _count: undefined
+    }))
+
+    let nextCursor: string | null = null
+    if (hasNextPage && categoryItems.length > 0) {
+      const lastItem = categoryItems[categoryItems.length - 1] as Category
+      nextCursor = this.encodeCategoryCursor(lastItem, sortBy)
+    }
+
+    let previousCursor: string | null = null
+    if (categoryItems.length > 0 && cursor) {
+      const firstItem = categoryItems[0] as Category
+      previousCursor = this.encodeCategoryCursor(firstItem, sortBy)
+    }
+
+    return new CursorPaginatedResponseDto<Category>({
+      items: categoryItems,
+      nextCursor,
+      previousCursor,
+      hasNextPage,
+      hasPreviousPage: !!cursor
+    })
+  }
+
+  private buildCategoryWhereClause(query: GetCategoriesQueryDto): Prisma.CategoryWhereInput {
+    const { search, parentId, isActive, depth, isDeleted } = query
     const where: Prisma.CategoryWhereInput = {}
 
     if (search) {
@@ -314,11 +454,20 @@ export class CategoriesService {
       where.isActive = isActive
     }
 
+    if (isDeleted !== undefined) {
+      where.isDeleted = isDeleted
+    }
+
     if (depth !== undefined) {
       where.depth = depth
     }
 
-    // Build include clause
+    return where
+  }
+
+  private buildCategoryIncludeClause(query: GetCategoriesQueryDto): Prisma.CategoryInclude {
+    const { includeChildren, includeProductCount, includeParent, isActive, includeAttributes } =
+      query
     const include: Prisma.CategoryInclude = {}
 
     if (includeChildren) {
@@ -338,68 +487,174 @@ export class CategoriesService {
       include.parent = true
     }
 
-    // Execute queries
-    const [categories, totalItems] = await Promise.all([
-      this.prismaService.category.findMany({
-        where,
-        include,
-        skip,
-        take: limit,
-        orderBy: [{ depth: 'asc' }, { name: 'asc' }]
-      }),
-      this.prismaService.category.count({ where })
-    ])
+    if (includeAttributes) {
+      include.categoryAttributes = {
+        include: {
+          attribute: {
+            include: {
+              values: true
+            }
+          }
+        }
+      }
+    }
 
-    // Transform data
-    const categoryItems = categories.map((cat: any) => ({
-      ...cat,
-      productCount: includeProductCount ? cat._count?.products : undefined,
-      _count: undefined
-    }))
+    return include
+  }
 
-    return new OffsetPaginatedResponseDto<Category>({
-      items: categoryItems,
-      limit,
-      page,
-      total: totalItems
-    })
+  private buildCategoryOrderByClause(
+    sortBy?: CategorySortBy,
+    sortOrder?: SortOrder
+  ): Prisma.CategoryOrderByWithRelationInput[] {
+    const sort = sortBy || CategorySortBy.CREATED_AT
+    const order = sortOrder || SortOrder.DESC
+    const orderByList: Prisma.CategoryOrderByWithRelationInput[] = []
+
+    switch (sort) {
+      case CategorySortBy.CREATED_AT:
+        orderByList.push({ createdAt: order })
+        break
+      case CategorySortBy.NAME:
+        orderByList.push({ name: order })
+        break
+      case CategorySortBy.DEPTH:
+        orderByList.push({ depth: order })
+        break
+      case CategorySortBy.SLUG:
+        orderByList.push({ slug: order })
+        break
+      case CategorySortBy.PARENT_CATEGORY_NAME:
+        orderByList.push({ parent: { name: order } })
+      case CategorySortBy.PRODUCT_COUNT:
+        // Product count sorting is handled in application code after fetching (for offset)
+        // Not supported for cursor pagination
+        break
+    }
+
+    // Always add ID as tiebreaker for stable sorting
+    // If you are still vaguely wondering why we need this sorting by ID as "tiebreaker"
+    // Read this: https://chatgpt.com/share/6983007e-f300-8001-865b-67ade9d65f66
+    orderByList.push({ id: order })
+
+    return orderByList
+  }
+
+  private buildCategoryCursorWhereClause(
+    baseWhere: Prisma.CategoryWhereInput,
+    cursorData: CategoryCursorData | null,
+    sortBy: CategorySortBy,
+    sortOrder: SortOrder
+  ): Prisma.CategoryWhereInput {
+    if (!cursorData) {
+      return baseWhere
+    }
+
+    const where: Prisma.CategoryWhereInput = { ...baseWhere }
+    const isAscending = sortOrder === SortOrder.ASC
+    const operator = isAscending ? 'gt' : 'lt'
+
+    const cursorConditions: any[] = []
+
+    switch (sortBy) {
+      case CategorySortBy.CREATED_AT:
+        if (cursorData.createdAt) {
+          cursorConditions.push({
+            OR: [
+              { createdAt: { [operator]: cursorData.createdAt } },
+              {
+                AND: [
+                  { createdAt: { equals: cursorData.createdAt } },
+                  { id: { [operator]: cursorData.id } }
+                ]
+              }
+            ]
+          })
+        }
+        break
+
+      case CategorySortBy.NAME:
+        if (cursorData.name) {
+          cursorConditions.push({
+            OR: [
+              { name: { [operator]: cursorData.name } },
+              {
+                AND: [{ name: { equals: cursorData.name } }, { id: { [operator]: cursorData.id } }]
+              }
+            ]
+          })
+        }
+        break
+
+      case CategorySortBy.DEPTH:
+        if (cursorData.depth !== undefined) {
+          cursorConditions.push({
+            OR: [
+              { depth: { [operator]: cursorData.depth } },
+              {
+                AND: [
+                  { depth: { equals: cursorData.depth } },
+                  { id: { [operator]: cursorData.id } }
+                ]
+              }
+            ]
+          })
+        }
+        break
+    }
+
+    if (cursorConditions.length > 0) {
+      if (where.AND) {
+        ;(where.AND as any[]).push(...cursorConditions)
+      } else {
+        where.AND = cursorConditions
+      }
+    }
+
+    return where
+  }
+
+  private encodeCategoryCursor(category: Category, sortBy: CategorySortBy): string {
+    const cursorData: CategoryCursorData = { id: category.id }
+
+    switch (sortBy) {
+      case CategorySortBy.CREATED_AT:
+        cursorData.createdAt = category.createdAt
+        break
+      case CategorySortBy.NAME:
+        cursorData.name = category.name
+        break
+      case CategorySortBy.DEPTH:
+        cursorData.depth = category.depth
+        break
+    }
+
+    return Buffer.from(JSON.stringify(cursorData)).toString('base64')
   }
 
   /**
    * Get single category by ID
    */
-  async findOne(
-    id: string,
-    includeChildren = false,
-    includeProductCount = false
-  ): Promise<Category> {
-    const include: Prisma.CategoryInclude = {}
-
-    if (includeChildren) {
-      include.children = {
-        orderBy: { name: 'asc' }
-      }
-    }
-
-    if (includeProductCount) {
-      include._count = {
-        select: { products: true }
-      }
-    }
-
+  async findOne(id: string): Promise<Category> {
     const category = await this.prismaService.category.findUnique({
       where: { id },
-      include
+      include: {
+        categoryAttributes: {
+          include: {
+            attribute: {
+              include: {
+                values: true
+              }
+            }
+          }
+        }
+      }
     })
 
     if (!category) {
       throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
-    return {
-      ...category,
-      productCount: includeProductCount ? (category as any)._count?.products : undefined
-    } as Category
+    return category
   }
 
   /**
@@ -539,24 +794,38 @@ export class CategoriesService {
 
     // Prevent setting self as parent
     if (updateCategoryDto.parentId === id) {
-      throw new BadRequestException('Category cannot be its own parent')
+      throw new BadRequestException('Danh mục cha phải khác với chính nó')
     }
 
+    if (updateCategoryDto.attributeIds) {
+      // Update category attributes - simple approach: delete old and create new
+      await this.prismaService.categoryAttribute.deleteMany({
+        where: { categoryId: id }
+      })
+      await this.prismaService.categoryAttribute.createMany({
+        data: updateCategoryDto.attributeIds.map((attributeId) => ({
+          categoryId: id,
+          attributeId
+        }))
+      })
+    }
+
+    delete updateCategoryDto.attributeIds
     // Handle parent change
+    let finalUpdateData = updateCategoryDto
     if (
       updateCategoryDto.parentId !== undefined && // if updateCategoryDto.parentId is null -> move to root
       updateCategoryDto.parentId !== category.parentId
     ) {
-      await this.prismaService.category.update({
-        where: { id },
-        data: updateCategoryDto
-      })
-      return this.moveCategory(id, { newParentId: updateCategoryDto.parentId })
+      await this.moveCategory(id, { newParentId: updateCategoryDto.parentId })
+      // Remove parentId from the final update since it's already handled
+      const { parentId, ...rest } = updateCategoryDto
+      finalUpdateData = rest
     }
 
     return this.prismaService.category.update({
       where: { id },
-      data: updateCategoryDto
+      data: finalUpdateData as any
     })
   }
 
@@ -576,7 +845,7 @@ export class CategoriesService {
 
     // Prevent setting self as parent
     if (newParentId === id) {
-      throw new BadRequestException('Category cannot be its own parent')
+      throw new BadRequestException('Danh mục cha phải khác với chính nó')
     }
 
     // Validate new parent
@@ -594,7 +863,9 @@ export class CategoriesService {
 
       // Prevent circular reference
       if (newParent.path.includes(`/${id}/`)) {
-        throw new BadRequestException('Cannot move category to its own descendant')
+        throw new BadRequestException(
+          'Không thể di chuyển danh mục này vào một trong các danh mục con của nó'
+        )
       }
 
       newPath = `${newParent.path}${newParent.id}/`
@@ -656,7 +927,11 @@ export class CategoriesService {
       throw new NotFoundException(`Category with ID "${id}" not found`)
     }
 
-    if (category.children.length > 0) {
+    if (
+      category.children.length > 0 &&
+      // If exists one children category is not soft-deleted, we cannot soft-delete this category
+      category.children.some((child) => !child.isDeleted)
+    ) {
       throw new BadRequestException(
         'Cannot delete category with children. Delete or move children first.'
       )

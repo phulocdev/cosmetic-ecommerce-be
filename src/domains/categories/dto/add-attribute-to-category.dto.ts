@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator'
-import { FilterDisplayType } from 'enums'
 
 export class CategoryAttributeBaseDto {
   @ApiPropertyOptional({ example: 'uuid-attribute', description: 'Attribute ID' })
@@ -18,18 +17,6 @@ export class CategoryAttributeBaseDto {
   @Min(0, { message: 'Display order must be at least 0' })
   @IsOptional()
   displayOrder?: number
-
-  // @ApiPropertyOptional({ example: 'CHECKBOX', description: 'Filter type' })
-  // @IsString({ message: 'Filter type must be a string' })
-  // @IsIn(['CHECKBOX', 'RADIO', 'SLIDER', 'SWATCH', 'DROPDOWN', 'TOGGLE'], {
-  //   message: 'Filter type must be one of the allowed values'
-  // })
-  // @IsOptional()
-  // filterType?: 'CHECKBOX' | 'RADIO' | 'SLIDER' | 'SWATCH' | 'DROPDOWN' | 'TOGGLE'
-
-  @IsEnum(FilterDisplayType, { message: 'Status must be a valid ProductStatus' })
-  @IsOptional()
-  filterType?: FilterDisplayType
 
   @ApiPropertyOptional({ example: true, description: 'Whether the attribute is filterable' })
   @IsBoolean({ message: 'isFilterable must be a boolean value' })

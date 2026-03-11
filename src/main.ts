@@ -38,7 +38,7 @@ async function bootstrap() {
   const uploadDest = configService.get<string>('app.uploadDest', './uploads')
   const assetPrefix = configService.get<string>('app.assetPrefix', '/public/')
 
-  // Enable Express “extended” query parser
+  // Enable Express “extended” query parser, ex: when your query params is:
   app.set('query parser', 'extended')
 
   // Set global prefix

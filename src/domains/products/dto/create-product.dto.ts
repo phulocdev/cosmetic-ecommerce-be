@@ -294,13 +294,13 @@ export class CreateProductDto {
   @ArrayMinSize(1, { message: 'At least one variant is required' })
   variants: CreateProductVariantDto[]
 
-  @ApiProperty({
-    type: [CreateProductAttributeDto],
-    description: 'Attributes that this product has (e.g., Color, Size)'
-  })
-  @IsArray({ message: 'Attributes must be an array' })
-  @ValidateNested({ each: true })
-  @Type(() => CreateProductAttributeDto)
-  @ArrayMinSize(1, { message: 'At least one attribute is required' })
-  attributes: CreateProductAttributeDto[]
+  // @ApiProperty({
+  //   type: [CreateProductAttributeDto],
+  //   description: 'Attributes that this product has (e.g., Color, Size)'
+  // })
+  // @IsArray({ message: 'Attributes must be an array' })
+  // @ValidateNested({ each: true })
+  // @Type(() => CreateProductAttributeDto)
+  // @ArrayMinSize(1, { message: 'At least one attribute is required' })
+  // attributes: CreateProductAttributeDto[]
 }

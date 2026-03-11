@@ -1,22 +1,10 @@
 import { IsOptional, IsString, IsBoolean, IsInt, Min, IsEnum, IsUUID } from 'class-validator'
 import { Type, Transform } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
+import { PaginationQueryDto } from 'core'
+import { CategorySortBy, CategoryTreeFormat } from 'enums'
 
-export class GetCategoriesQueryDto {
-  @ApiPropertyOptional({ example: 1, description: 'Page number', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1
-
-  @ApiPropertyOptional({ example: 20, description: 'Items per page', default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 20
-
+export class GetCategoriesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ example: 'laptops', description: 'Search by name or slug' })
   @IsOptional()
   @IsString()
@@ -26,6 +14,12 @@ export class GetCategoriesQueryDto {
   @IsOptional()
   @IsUUID('4', { message: 'Parent ID must be a valid UUID' })
   parentId?: string
+
+  @ApiPropertyOptional({ example: true, description: 'Filter by deleted status' })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isDeleted?: boolean
 
   @ApiPropertyOptional({ example: true, description: 'Filter by active status' })
   @IsOptional()
@@ -39,6 +33,18 @@ export class GetCategoriesQueryDto {
   @IsInt()
   @Min(0)
   depth?: number
+
+  @ApiPropertyOptional({
+    enum: CategorySortBy,
+    enumName: 'CategorySortBy',
+    example: CategorySortBy.CREATED_AT,
+    default: CategorySortBy.CREATED_AT
+  })
+  @IsEnum(CategorySortBy, {
+    message: `Sort by must be a valid CategorySortBy: ${Object.values(CategorySortBy).join(', ')}`
+  })
+  @IsOptional()
+  sortBy?: CategorySortBy = CategorySortBy.CREATED_AT
 
   @ApiPropertyOptional({
     example: true,
@@ -65,11 +71,11 @@ export class GetCategoriesQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includeProductCount?: boolean
-}
 
-export enum CategoryTreeFormat {
-  NESTED = 'nested',
-  FLAT = 'flat'
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  includeAttributes?: boolean
 }
 
 export class GetCategoryTreeQueryDto {
@@ -84,6 +90,12 @@ export class GetCategoryTreeQueryDto {
   @IsInt()
   @Min(1)
   maxDepth?: number
+
+  @ApiPropertyOptional({ example: true, description: 'Filter by deleted status' })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isDeleted?: boolean
 
   @ApiPropertyOptional({
     example: true,

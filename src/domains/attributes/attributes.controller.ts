@@ -22,16 +22,16 @@ export class AttributesController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.attributesService.findOne(+id)
+    return this.attributesService.findOne(id)
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAttributeDto: UpdateAttributeDto) {
-    return this.attributesService.update(+id, updateAttributeDto)
+    return this.attributesService.update(id, updateAttributeDto)
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.attributesService.remove(+id)
+    return this.attributesService.remove(id)
   }
 }

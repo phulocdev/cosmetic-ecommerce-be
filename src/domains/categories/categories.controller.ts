@@ -1,34 +1,35 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  HttpStatus,
+  Controller,
   DefaultValuePipe,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
   ParseBoolPipe,
   ParseUUIDPipe,
-  HttpCode
+  Patch,
+  Post,
+  Query
 } from '@nestjs/common'
-import { CategoriesService } from './categories.service'
-import { CreateCategoryDto } from './dto/create-category.dto'
-import { UpdateCategoryDto } from './dto/update-category.dto'
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
-import {
-  BreadcrumbItem,
-  Category,
-  CategoryTreeNode
-} from 'domains/categories/entities/category.entity'
+import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto } from 'core'
+import { ResponseMessage } from 'core/decorators/response-message.decorator'
+import { DateRangePipe, ParsedDateRange } from 'core/pipes/date-range.pipe'
 import {
   GetCategoriesQueryDto,
   GetCategoryTreeQueryDto,
   MoveCategoryDto
 } from 'domains/categories/dto/query-category.dto'
-import { ResponseMessage } from 'core/decorators/response-message.decorator'
-import { OffsetPaginatedResponseDto } from 'core'
+import {
+  BreadcrumbItem,
+  Category,
+  CategoryTreeNode
+} from 'domains/categories/entities/category.entity'
+import { CategoriesService } from './categories.service'
+import { CreateCategoryDto } from './dto/create-category.dto'
+import { UpdateCategoryDto } from './dto/update-category.dto'
 
 @Controller('categories')
 export class CategoriesController {
@@ -101,9 +102,10 @@ export class CategoriesController {
   })
   @ResponseMessage('Categories fetched successfully')
   async findAll(
-    @Query() query: GetCategoriesQueryDto
-  ): Promise<OffsetPaginatedResponseDto<Category>> {
-    return this.categoriesService.findAll(query)
+    @Query() query: GetCategoriesQueryDto,
+    @Query(DateRangePipe) { dateRange }: ParsedDateRange
+  ): Promise<OffsetPaginatedResponseDto<Category> | CursorPaginatedResponseDto<Category>> {
+    return this.categoriesService.findAll(query, dateRange)
   }
 
   @Get(':id')
@@ -132,13 +134,16 @@ export class CategoriesController {
     description: 'Category not found'
   })
   async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query('includeChildren', new DefaultValuePipe(false), ParseBoolPipe)
-    includeChildren: boolean,
-    @Query('includeProductCount', new DefaultValuePipe(false), ParseBoolPipe)
-    includeProductCount: boolean
+    @Param('id', ParseUUIDPipe) id: string
+    // @Query('includeChildren', new DefaultValuePipe(false), ParseBoolPipe)
+    // includeChildren: boolean,
+    // @Query('includeProductCount', new DefaultValuePipe(false), ParseBoolPipe)
+    // includeProductCount: boolean
   ): Promise<Category> {
-    return this.categoriesService.findOne(id, includeChildren, includeProductCount)
+    return this.categoriesService.findOne(
+      id
+      // , includeChildren, includeProductCount
+    )
   }
 
   @Get('slug/:slug')

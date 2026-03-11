@@ -4,6 +4,11 @@ export enum UserRole {
   STAFF = 'STAFF'
 }
 
+export enum CategoryTreeFormat {
+  NESTED = 'nested',
+  FLAT = 'flat'
+}
+
 export enum SortOrder {
   ASC = 'asc',
   DESC = 'desc'
@@ -11,11 +16,18 @@ export enum SortOrder {
 
 export enum ProductSortBy {
   CREATED_AT = 'createdAt',
-  UPDATED_AT = 'updatedAt',
   NAME = 'name',
   PRICE = 'basePrice',
-  VIEWS = 'views',
-  POPULARITY = 'popularity'
+  VIEWS = 'views'
+}
+
+export enum CategorySortBy {
+  NAME = 'name',
+  SLUG = 'slug',
+  CREATED_AT = 'createdAt',
+  PARENT_CATEGORY_NAME = 'parentCategoryName',
+  PRODUCT_COUNT = 'productCount',
+  DEPTH = 'depth'
 }
 
 export enum PaginationType {
@@ -27,20 +39,4 @@ export enum ProductStatus {
   PUBLISHED = 'PUBLISHED',
   DRAFT = 'DRAFT',
   ARCHIVED = 'ARCHIVED'
-}
-
-export enum AttributeDataType {
-  TEXT = 'TEXT',
-  NUMBER = 'NUMBER',
-  BOOLEAN = 'BOOLEAN',
-  COLOR = 'COLOR'
-}
-
-export enum FilterDisplayType {
-  CHECKBOX = 'CHECKBOX',
-  RADIO = 'RADIO',
-  SLIDER = 'SLIDER',
-  SWATCH = 'SWATCH',
-  DROPDOWN = 'DROPDOWN',
-  TOGGLE = 'TOGGLE'
 }

@@ -43,23 +43,25 @@ export class ValidateDtoService {
       }
     }
 
-    // Validate all attributes
-    if (dto.attributes && dto.attributes.length > 0) {
-      const attributeIds = dto.attributes.map((a) => a.attributeId)
-      const attributes = await this.prismaService.attribute.findMany({
-        where: { id: { in: attributeIds } }
-      })
+    // // Validate all attributes
+    // if (dto.attributes && dto.attributes.length > 0) {
+    //   const attributeIds = dto.attributes.map((a) => a.attributeId)
+    //   const attributes = await this.prismaService.attribute.findMany({
+    //     where: { id: { in: attributeIds } }
+    //   })
 
-      const foundIds = attributes.map((a) => a.id)
-      const missingIds = attributeIds.filter((id) => !foundIds.includes(id))
-      if (missingIds.length > 0) {
-        errors.push(`Attributes not found: ${missingIds.join(', ')}`)
-      }
-    }
+    //   const foundIds = attributes.map((a) => a.id)
+    //   const missingIds = attributeIds.filter((id) => !foundIds.includes(id))
+    //   if (missingIds.length > 0) {
+    //     errors.push(`Attributes not found: ${missingIds.join(', ')}`)
+    //   }
+    // }
 
     // Validate all attribute values in variants
     if (dto.variants && dto.variants.length > 0) {
-      const allAttributeValueIds = dto.variants.flatMap((v) => v.attributeValues.map((av) => av.attributeValueId))
+      const allAttributeValueIds = dto.variants.flatMap((v) =>
+        v.attributeValues.map((av) => av.attributeValueId)
+      )
 
       if (allAttributeValueIds.length > 0) {
         const attributeValues = await this.prismaService.attributeValue.findMany({
@@ -134,11 +136,13 @@ export class ValidateDtoService {
     if (existingVariants.length > 0) {
       const existingSkus = existingVariants.map((v) => v.sku)
       const existingBarcodes = existingVariants.map((v) => v.barcode)
-      errors.push(`SKUs or barcodes already exist: ${[...existingSkus, ...existingBarcodes].join(', ')}`)
+      errors.push(
+        `SKUs or barcodes already exist: ${[...existingSkus, ...existingBarcodes].join(', ')}`
+      )
     }
 
     // Validate that variant attribute values match product attributes
-    const productAttributeIds = dto.attributes.map((a) => a.attributeId)
+    // const productAttributeIds = dto.attributes.map((a) => a.attributeId)
 
     for (const variant of dto.variants) {
       const variantAttributeValueIds = variant.attributeValues.map((av) => av.attributeValueId)
@@ -149,14 +153,18 @@ export class ValidateDtoService {
         select: { attributeId: true }
       })
 
-      const variantAttributeIds = attributeValues.map((av) => av.attributeId)
+      // const variantAttributeIds = attributeValues.map((av) => av.attributeId)
 
       // Check if all variant attributes are in product attributes
-      const invalidAttributes = variantAttributeIds.filter((id) => !productAttributeIds.includes(id))
+      // const invalidAttributes = variantAttributeIds.filter(
+      //   (id) => !productAttributeIds.includes(id)
+      // )
 
-      if (invalidAttributes.length > 0) {
-        errors.push(`Variant "${variant.name}" has attribute values that don't match product attributes`)
-      }
+      // if (invalidAttributes.length > 0) {
+      //   errors.push(
+      //     `Variant "${variant.name}" has attribute values that don't match product attributes`
+      //   )
+      // }
     }
 
     // Validate price logic
@@ -199,7 +207,9 @@ export class ValidateDtoService {
 
     // Validate categories if provided. This operation will ensure referenced categories exist in the DB
     if (dto.categories && dto.categories.length > 0) {
-      const categoryIds = dto.categories.filter((c) => c.categoryId && !c._delete).map((c) => c.categoryId)
+      const categoryIds = dto.categories
+        .filter((c) => c.categoryId && !c._delete)
+        .map((c) => c.categoryId)
 
       if (categoryIds.length > 0) {
         // NOTE: We only check categories being added/updated, not deleted ones
@@ -219,7 +229,9 @@ export class ValidateDtoService {
 
     // Validate attributes if provided
     if (dto.attributes && dto.attributes.length > 0) {
-      const attributeIds = dto.attributes.filter((a) => a.attributeId && !a._delete).map((a) => a.attributeId)
+      const attributeIds = dto.attributes
+        .filter((a) => a.attributeId && !a._delete)
+        .map((a) => a.attributeId)
 
       if (attributeIds.length > 0) {
         const attributes = await this.prismaService.attribute.findMany({
@@ -239,7 +251,9 @@ export class ValidateDtoService {
       const allAttributeValueIds = dto.variants
         .filter((v) => !v._delete && v.attributeValues)
         .flatMap((v) =>
-          v.attributeValues.filter((av) => av.attributeValueId && !av._delete).map((av) => av.attributeValueId)
+          v.attributeValues
+            .filter((av) => av.attributeValueId && !av._delete)
+            .map((av) => av.attributeValueId)
         )
 
       if (allAttributeValueIds.length > 0) {
@@ -341,16 +355,19 @@ export class ValidateDtoService {
         })
 
         if (existingVariants.length > 0) {
-          const conflictingSkus = existingVariants.filter((v) => newSkus.includes(v.sku)).map((v) => v.sku)
+          const conflictingSkus = existingVariants
+            .filter((v) => newSkus.includes(v.sku))
+            .map((v) => v.sku)
           const conflictingBarcodes = existingVariants
             .filter((v) => newBarcodes.includes(v.barcode))
             .map((v) => v.barcode)
 
           if (conflictingSkus.length > 0 || conflictingBarcodes.length > 0) {
             errors.push(
-              `SKUs or barcodes already exist in other products: ${[...conflictingSkus, ...conflictingBarcodes].join(
-                ', '
-              )}`
+              `SKUs or barcodes already exist in other products: ${[
+                ...conflictingSkus,
+                ...conflictingBarcodes
+              ].join(', ')}`
             )
           }
         }
@@ -360,7 +377,9 @@ export class ValidateDtoService {
       for (const variant of dto.variants) {
         if (!variant._delete && variant.sellingPrice && variant.costPrice) {
           if (variant.sellingPrice < variant.costPrice) {
-            errors.push(`Variant "${variant.name || variant.id}" has selling price lower than cost price`)
+            errors.push(
+              `Variant "${variant.name || variant.id}" has selling price lower than cost price`
+            )
           }
         }
       }

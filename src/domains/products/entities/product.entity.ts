@@ -10,7 +10,7 @@ export class Product {
   name: string
   slug: string
   description: string
-  status: ProductStatus
+  status: string
   basePrice: number
   views: number
   brandId: string
@@ -23,7 +23,7 @@ export class Product {
   countryOfOrigin: CountryOfOrigin
   categories: ProductCategory[]
   variants: ProductVariant[]
-  attributes: ProductAttribute[]
+  // attributes: ProductAttribute[]
   images: ProductImage[]
 
   constructor(data: Product) {
@@ -50,7 +50,6 @@ export class ProductAttribute {
     Object.assign(this, data)
   }
 }
-
 export class ProductVariant {
   id: string
   sku: string
@@ -79,7 +78,6 @@ export class VariantAttributeValue {
     Object.assign(this, data)
   }
 }
-
 export class AttributeValue {
   id: string
   value: string
@@ -89,7 +87,6 @@ export class AttributeValue {
     Object.assign(this, data)
   }
 }
-
 export class VariantImage {
   url: string
   altText?: string
@@ -98,7 +95,6 @@ export class VariantImage {
     Object.assign(this, data)
   }
 }
-
 export class ProductImage {
   url: string
   altText?: string

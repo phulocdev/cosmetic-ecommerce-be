@@ -1,13 +1,14 @@
 import {
-  IsString,
-  MaxLength,
-  MinLength,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsBoolean,
   IsNotEmpty,
   IsOptional,
-  IsEnum,
-  IsBoolean
+  IsString,
+  MaxLength,
+  MinLength
 } from 'class-validator'
-import { AttributeDataType } from 'enums'
 
 export class CreateAttributeDto {
   @MaxLength(255, { message: 'Name must be at most 255 characters' })
@@ -26,7 +27,17 @@ export class CreateAttributeDto {
   @IsOptional()
   isGlobalFilter?: boolean // Show on /collections/all?
 
-  @IsString({ message: 'unit must be a string' })
-  @IsOptional()
-  unit?: string
+  // @IsString({ message: 'unit must be a string' })
+  // @IsOptional()
+  // unit?: string
+
+  // Receive the list of attribute values as a array of string
+  @IsArray({ message: 'values must be an array' })
+  @ArrayMinSize(1, { message: 'At least one attribute value is required' })
+  @ArrayUnique((value: string) => value.toLowerCase(), {
+    message: 'Attribute values must be unique'
+  })
+  @IsString({ each: true, message: 'Each attribute value in values field must be a string' })
+  @IsNotEmpty({ message: 'values are required', each: true })
+  values: string[]
 }

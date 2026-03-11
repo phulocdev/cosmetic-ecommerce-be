@@ -254,25 +254,6 @@ export class ProductQueryDto extends PaginationQueryDto {
   @IsOptional()
   sku?: string
 
-  // Date range filters
-  @ApiPropertyOptional({
-    example: '2024-01-01',
-    description: 'Filter products created after this date (ISO 8601)'
-  })
-  @IsOptional()
-  @IsISO8601({}, { message: 'Created after must be a valid ISO 8601 date string' })
-  @Type(() => Date)
-  createdAfter?: Date
-
-  @ApiPropertyOptional({
-    example: '2024-12-31',
-    description: 'Filter products created before this date (ISO 8601)'
-  })
-  @IsOptional()
-  @IsISO8601({}, { message: 'Created before must be a valid ISO 8601 date string' })
-  @Type(() => Date)
-  createdBefore?: Date
-
   // Sorting
   @ApiPropertyOptional({
     enum: ProductSortBy,
@@ -285,18 +266,6 @@ export class ProductQueryDto extends PaginationQueryDto {
   })
   @IsOptional()
   sortBy?: ProductSortBy = ProductSortBy.CREATED_AT
-
-  @ApiPropertyOptional({
-    enum: SortOrder,
-    enumName: 'SortOrder',
-    example: SortOrder.DESC,
-    default: SortOrder.DESC
-  })
-  @IsEnum(SortOrder, {
-    message: `Sort order must be a valid SortOrder: ${Object.values(SortOrder).join(', ')}`
-  })
-  @IsOptional()
-  sortOrder?: SortOrder = SortOrder.DESC
 
   // Include relations
   @ApiPropertyOptional({

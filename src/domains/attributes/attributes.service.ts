@@ -6,6 +6,7 @@ import { slugifyString } from 'utils'
 import { FindAllAttributeDto } from 'domains/attributes/dto/find-all-attribute.dto'
 import { OffsetPaginatedResponseDto } from 'core'
 import { Attribute } from 'domains/attributes/entities/attribute.entity'
+import { Prisma } from '@prisma/client'
 
 @Injectable()
 export class AttributesService {
@@ -28,8 +29,15 @@ export class AttributesService {
 
     return this.prismaService.attribute.create({
       data: {
-        ...createAttributeDto,
-        slug: createAttributeDto.slug || slugifyString(createAttributeDto.name)
+        name: createAttributeDto.name,
+        slug: createAttributeDto.slug || slugifyString(createAttributeDto.name),
+        isGlobalFilter: createAttributeDto.isGlobalFilter ?? false,
+        values: {
+          create: createAttributeDto.values.map((value) => ({ value }))
+        }
+      },
+      include: {
+        values: true
       }
     })
   }
@@ -39,9 +47,21 @@ export class AttributesService {
     const limit = query.getAll ? undefined : query.limit || 10
     const skip = query.getAll ? undefined : (page - 1) * limit
 
+    const { categoryId } = query
+    const whereClause: Prisma.AttributeWhereInput = {}
+
+    if (categoryId) {
+      whereClause.categoryAttributes = {
+        some: {
+          categoryId
+        }
+      }
+    }
+
     const [attributes, total] = await Promise.all([
       this.prismaService.attribute.findMany({
         skip,
+        where: whereClause,
         take: limit,
         include: {
           values: {
@@ -64,15 +84,106 @@ export class AttributesService {
     })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} attribute`
+  findOne(id: string) {
+    return this.prismaService.attribute.findUnique({
+      where: { id },
+      include: {
+        values: {
+          select: {
+            id: true,
+            attributeId: true,
+            value: true
+          }
+        }
+      }
+    })
   }
 
-  update(id: number, updateAttributeDto: UpdateAttributeDto) {
-    return `This action updates a #${id} attribute`
+  async update(id: string, updateAttributeDto: UpdateAttributeDto) {
+    // Check if attribute exists
+    const existingAttribute = await this.prismaService.attribute.findUnique({
+      where: { id },
+      include: { values: true }
+    })
+
+    if (!existingAttribute) {
+      throw new BadRequestException('Attribute not found')
+    }
+
+    // Check for unique constraint violations if name or slug is being updated
+    if (updateAttributeDto.name || updateAttributeDto.slug) {
+      const conflictingAttribute = await this.prismaService.attribute.findFirst({
+        where: {
+          AND: [
+            { id: { not: id } }, // Exclude current attribute
+            {
+              OR: [
+                updateAttributeDto.name ? { name: updateAttributeDto.name } : {},
+                updateAttributeDto.slug
+                  ? {
+                      slug:
+                        updateAttributeDto.slug ||
+                        slugifyString(updateAttributeDto.name || existingAttribute.name)
+                    }
+                  : {}
+              ].filter((obj) => Object.keys(obj).length > 0)
+            }
+          ]
+        }
+      })
+
+      if (conflictingAttribute) {
+        throw new BadRequestException('An attribute with the same name or slug already exists')
+      }
+    }
+
+    // Prepare update data
+    const updateData: any = {}
+
+    if (updateAttributeDto.name !== undefined) {
+      updateData.name = updateAttributeDto.name
+    }
+
+    if (updateAttributeDto.slug !== undefined) {
+      updateData.slug =
+        updateAttributeDto.slug || slugifyString(updateAttributeDto.name || existingAttribute.name)
+    }
+
+    if (updateAttributeDto.isGlobalFilter !== undefined) {
+      updateData.isGlobalFilter = updateAttributeDto.isGlobalFilter
+    }
+
+    // Handle values update if provided
+    if (updateAttributeDto.values !== undefined) {
+      // Delete existing values
+      await this.prismaService.attributeValue.deleteMany({
+        where: { attributeId: id }
+      })
+
+      // Create new values
+      updateData.values = {
+        create: updateAttributeDto.values.map((value) => ({ value }))
+      }
+    }
+
+    return this.prismaService.attribute.update({
+      where: { id },
+      data: updateData,
+      include: {
+        values: {
+          select: {
+            id: true,
+            attributeId: true,
+            value: true
+          }
+        }
+      }
+    })
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} attribute`
+  remove(id: string) {
+    return this.prismaService.attribute.delete({
+      where: { id }
+    })
   }
 }
