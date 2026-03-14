@@ -2,11 +2,11 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { CreateAttributeDto } from './dto/create-attribute.dto'
 import { UpdateAttributeDto } from './dto/update-attribute.dto'
 import { PrismaService } from 'database/prisma/prisma.service'
-import { slugifyString } from 'utils'
 import { FindAllAttributeDto } from 'domains/attributes/dto/find-all-attribute.dto'
 import { OffsetPaginatedResponseDto } from 'core'
 import { Attribute } from 'domains/attributes/entities/attribute.entity'
 import { Prisma } from '@prisma/client'
+import { slugifyString } from 'utils/business.util'
 
 @Injectable()
 export class AttributesService {
@@ -178,6 +178,25 @@ export class AttributesService {
           }
         }
       }
+    })
+  }
+
+  async softDelete(id: string): Promise<Attribute> {
+    const existingAttribute = await this.prismaService.attribute.findUnique({
+      where: { id }
+    })
+
+    if (!existingAttribute) {
+      throw new BadRequestException('Attribute not found')
+    }
+
+    if (!existingAttribute.isDeleted) {
+      throw new BadRequestException('Attribute is not marked as deleted')
+    }
+
+    return this.prismaService.attribute.update({
+      where: { id },
+      data: { isDeleted: false, deletedAt: new Date() }
     })
   }
 

@@ -11,8 +11,6 @@ export class AppController {
     @Inject() private readonly appService: AppService // private readonly mailerService: MailerService
   ) {}
 
-  // @Inject('app_service  ')
-  // private readonly newAppService: AppService
   @Public()
   @Get()
   getHello() {

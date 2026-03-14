@@ -148,7 +148,7 @@ model ProductVariant {
 
   sku          String @unique
   name         String
-  barcode      String @unique
+  barcode      String?  @default("")
   costPrice    Decimal @db.Decimal(10, 2)
   sellingPrice Decimal @db.Decimal(10, 2)
   stockOnHand  Int?   @default(0) // inventory quantity
@@ -230,6 +230,11 @@ model Brand {
 
   products Product[]
 
+    
+  // Soft delete
+  isDeleted Boolean @default(false)
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
 
@@ -242,6 +247,10 @@ model CountryOfOrigin {
   name String @default("")
 
   products Product[]
+
+  // Soft delete
+  isDeleted Boolean @default(false)
+  deletedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
@@ -611,6 +620,7 @@ model Attribute {
 
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+  
   deletedAt DateTime?
   isDeleted Boolean @default(false)
 
@@ -673,7 +683,7 @@ model ProductImage {
   productId String
   url       String
   altText   String?
-  displayOrder Int? @default(0) // For ordering images in the gallery
+  displayOrder Int? @default(1) // For ordering images in the gallery
 
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 

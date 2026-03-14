@@ -9,6 +9,7 @@ import {
   UpdateVariantAttributeValueDto,
   UpdateVariantImageDto
 } from 'domains/products/dto'
+import { generateVariantSku } from 'utils'
 
 @Injectable()
 export class UpdateProductService {
@@ -88,6 +89,7 @@ export class UpdateProductService {
         const updateData: Partial<ProductImage> = {}
         if (image.url !== undefined) updateData.url = image.url
         if (image.altText !== undefined) updateData.altText = image.altText
+        if (image.displayOrder !== undefined) updateData.displayOrder = image.displayOrder
 
         if (Object.keys(updateData).length > 0) {
           await tx.productImage.update({
@@ -101,6 +103,7 @@ export class UpdateProductService {
           data: {
             productId,
             url: image.url,
+            displayOrder: image.displayOrder || 1,
             altText: image.altText || null
           }
         })
@@ -109,66 +112,12 @@ export class UpdateProductService {
   }
 
   /**
-   * Update product attributes
-   */
-  // async updateProductAttributes(
-  //   tx: Prisma.TransactionClient,
-  //   productId: string,
-  //   attributes: UpdateProductAttributeDto[]
-  // ) {
-  //   for (const attribute of attributes) {
-  //     if (attribute._delete && attribute.attributeId) {
-  //       // Delete specific attribute
-  //       await tx.productAttribute.deleteMany({
-  //         where: {
-  //           productId,
-  //           attributeId: attribute.attributeId
-  //         }
-  //       })
-  //     } else if (attribute.attributeId) {
-  //       // Check if association exists
-  //       const existing = await tx.productAttribute.findUnique({
-  //         where: {
-  //           productId_attributeId: {
-  //             productId,
-  //             attributeId: attribute.attributeId
-  //           }
-  //         }
-  //       })
-
-  //       if (existing) {
-  //         // Update existing association
-  //         await tx.productAttribute.update({
-  //           where: {
-  //             productId_attributeId: {
-  //               productId,
-  //               attributeId: attribute.attributeId
-  //             }
-  //           },
-  //           data: {
-  //             isRequired: attribute.isRequired ?? existing.isRequired
-  //           }
-  //         })
-  //       } else {
-  //         // Create new association
-  //         await tx.productAttribute.create({
-  //           data: {
-  //             productId,
-  //             attributeId: attribute.attributeId,
-  //             isRequired: attribute.isRequired ?? true
-  //           }
-  //         })
-  //       }
-  //     }
-  //   }
-  // }
-
-  /**
    * Update product variants
    */
   async updateProductVariants(
     tx: Prisma.TransactionClient,
     productId: string,
+    productCode: string,
     variants: UpdateProductVariantDto[]
   ) {
     for (const variant of variants) {
@@ -180,7 +129,6 @@ export class UpdateProductService {
       } else if (variant.id) {
         // Update existing variant
         const updateData: Partial<ProductVariant> = {}
-        if (variant.sku !== undefined) updateData.sku = variant.sku
         if (variant.name !== undefined) updateData.name = variant.name
         if (variant.barcode !== undefined) updateData.barcode = variant.barcode
         if (variant.costPrice !== undefined) {
@@ -206,7 +154,7 @@ export class UpdateProductService {
           })
         }
 
-        // Handle variant attribute values
+        // Handle Update instances in VariantAttributeValue Table
         if (variant.attributeValues) {
           await this.updateVariantAttributeValues(tx, variant.id, variant.attributeValues)
         }
@@ -220,7 +168,13 @@ export class UpdateProductService {
         const createdVariant = await tx.productVariant.create({
           data: {
             productId,
-            sku: variant.sku,
+            sku: generateVariantSku(
+              productCode,
+              variant.attributeValues?.map((v) => ({
+                attributeValueId: v.attributeValueId,
+                value: v.value
+              })) || []
+            ),
             name: variant.name,
             barcode: variant.barcode,
             costPrice: new Prisma.Decimal(variant.costPrice),
@@ -275,12 +229,12 @@ export class UpdateProductService {
   ) {
     for (const attrVal of attributeValues) {
       if (attrVal._delete && attrVal.id) {
-        // Delete specific attribute value
+        // Delete specific variant attribute value instances by its ID
         await tx.variantAttributeValue.delete({
           where: { id: attrVal.id }
         })
       } else if (attrVal._delete && attrVal.attributeValueId) {
-        // Delete by attributeValueId
+        // Also delete by variantId and attributeValueId if ID is not provided but _delete is true
         await tx.variantAttributeValue.deleteMany({
           where: {
             variantId,
@@ -304,48 +258,13 @@ export class UpdateProductService {
               attributeValueId: attrVal.attributeValueId
             }
           })
+        } else {
+          // Note: VariantAttributeValue doesn't have updateable fields beyond the relation
+          // No updateable fields in VariantAttributeValue, so nothing to update
+          // If there were updateable fields, we would handle them here
+          // Keep the current association as is since there's nothing to update -> It's right
         }
-        // Note: VariantAttributeValue doesn't have updateable fields beyond the relation
       }
     }
   }
-
-  /**
-   * Update variant images
-   */
-  // async updateVariantImages(
-  //   tx: Prisma.TransactionClient,
-  //   variantId: string,
-  //   images: UpdateVariantImageDto[]
-  // ) {
-  //   for (const image of images) {
-  //     if (image._delete && image.id) {
-  //       // Delete specific image
-  //       await tx.variantImage.delete({
-  //         where: { id: image.id }
-  //       })
-  //     } else if (image.id) {
-  //       // Update existing image
-  //       const updateData: Partial<VariantImage> = {}
-  //       if (image.url !== undefined) updateData.url = image.url
-  //       if (image.altText !== undefined) updateData.altText = image.altText
-
-  //       if (Object.keys(updateData).length > 0) {
-  //         await tx.variantImage.update({
-  //           where: { id: image.id },
-  //           data: updateData
-  //         })
-  //       }
-  //     } else if (image.url) {
-  //       // Create new image
-  //       await tx.variantImage.create({
-  //         data: {
-  //           variantId,
-  //           url: image.url,
-  //           altText: image.altText || null
-  //         }
-  //       })
-  //     }
-  //   }
-  // }
 }

@@ -13,13 +13,12 @@ import {
   ResetPasswordDto
 } from 'domains/auth/dtos/auth.dto'
 import { EmailProducer } from 'domains/email/email.producer'
-import { UserEntity } from 'domains/users'
 import { UsersService } from 'domains/users/users.service'
 import { UserRole } from 'enums'
 import Redis from 'ioredis'
 import ms from 'ms'
 import { AccessTokenPayload, RefreshTokenPayload, User } from 'types'
-import { hashToken } from 'utils/hash.util'
+import { hashToken } from 'utils'
 import { v4 as uuidv4 } from 'uuid'
 
 @Injectable()

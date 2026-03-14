@@ -190,9 +190,9 @@ export class ProductQueryDto extends PaginationQueryDto {
     example: true,
     description: 'Only show products with in-stock variants'
   })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean({ message: 'In stock filter must be a boolean' })
   @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
   inStock?: boolean
 
   @ApiPropertyOptional({

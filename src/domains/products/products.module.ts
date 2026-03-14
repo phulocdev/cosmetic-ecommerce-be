@@ -2,19 +2,12 @@ import { Module } from '@nestjs/common'
 import { ProductsController } from './products.controller'
 import { ProductsService } from 'domains/products/products.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
-import { InvalidateFilterCacheService } from 'domains/products/invalidate-filter-cache.service'
 import { UpdateProductService } from 'domains/products/update-product.service'
 import { FindAllProductService } from 'domains/products/find-all-product.service'
 
 @Module({
   controllers: [ProductsController],
-  providers: [
-    ProductsService,
-    ValidateDtoService,
-    InvalidateFilterCacheService,
-    UpdateProductService,
-    FindAllProductService
-  ],
+  providers: [ProductsService, ValidateDtoService, UpdateProductService, FindAllProductService],
   exports: [ProductsService]
 })
 export class ProductsModule {}

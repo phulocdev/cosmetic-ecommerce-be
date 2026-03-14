@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common'
+import { OffsetPaginatedResponseDto, ParseUUIDPipe } from 'core'
+import { FindAllAttributeDto } from 'domains/attributes/dto/find-all-attribute.dto'
+import { Attribute } from 'domains/attributes/entities/attribute.entity'
 import { AttributesService } from './attributes.service'
 import { CreateAttributeDto } from './dto/create-attribute.dto'
 import { UpdateAttributeDto } from './dto/update-attribute.dto'
-import { FindAllAttributeDto } from 'domains/attributes/dto/find-all-attribute.dto'
-import { Attribute } from 'domains/attributes/entities/attribute.entity'
-import { OffsetPaginatedResponseDto } from 'core'
 
 @Controller('attributes')
 export class AttributesController {
@@ -21,13 +21,18 @@ export class AttributesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.attributesService.findOne(id)
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAttributeDto: UpdateAttributeDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateAttributeDto: UpdateAttributeDto) {
     return this.attributesService.update(id, updateAttributeDto)
+  }
+
+  @Delete(':id/soft')
+  async softDelete(@Param('id', ParseUUIDPipe) id: string): Promise<Attribute> {
+    return this.attributesService.softDelete(id)
   }
 
   @Delete(':id')

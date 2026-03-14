@@ -19,9 +19,10 @@ import {
 } from 'domains/categories/entities/category.entity'
 import { CategorySortBy, CategoryTreeFormat, PaginationType, SortOrder } from 'enums'
 import { CategoryCursorData } from 'types'
-import { slugifyString, UtcDateRange } from 'utils'
 import { CreateCategoryDto } from './dto/create-category.dto'
 import { UpdateCategoryDto } from './dto/update-category.dto'
+import { UtcDateRange } from 'utils'
+import { slugifyString } from 'utils/business.util'
 
 @Injectable()
 export class CategoriesService {

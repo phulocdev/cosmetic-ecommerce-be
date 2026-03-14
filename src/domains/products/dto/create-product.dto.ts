@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import {
   ArrayMinSize,
   IsArray,
@@ -9,6 +9,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsPositive,
   IsString,
   IsUUID,
   IsUrl,
@@ -28,9 +29,10 @@ export class CreateProductImageDto {
   @IsNotEmpty({ message: 'URL is required' })
   url: string
 
+  @IsPositive({ message: 'Display order must be a positive integer' })
   @IsInt({ message: 'Display order must be an integer' })
-  @IsNotEmpty({ message: 'Display order is required' })
-  displayOrder: number
+  @IsOptional()
+  displayOrder?: number
 
   @ApiPropertyOptional({ example: 'Product main image' })
   @IsString({ message: 'Alt text must be a string' })
@@ -50,23 +52,33 @@ export class CreateVariantAttributeValueDto {
   @IsUUID('4', { message: 'Attribute value ID must be a valid UUID' })
   @IsNotEmpty({ message: 'Attribute value ID is required' })
   attributeValueId: string
+
+  @ApiProperty({
+    example: 'Red',
+    description: 'The actual value for this attribute (e.g., Red, Large)'
+  })
+  @IsString({ message: 'Attribute value must be a string' })
+  @MaxLength(255, { message: 'Attribute value must be at most 255 characters' })
+  @MinLength(1, { message: 'Attribute value must be at least 1 character' })
+  @IsNotEmpty({ message: 'Attribute value is required' })
+  value: string
 }
 
 /**
  * DTO for variant images
  */
-export class CreateVariantImageDto {
-  @ApiProperty({ example: 'https://example.com/variant-image.jpg' })
-  @IsUrl({}, { message: 'URL must be a valid URL' })
-  @IsNotEmpty({ message: 'URL is required' })
-  url: string
+// export class CreateVariantImageDto {
+//   @ApiProperty({ example: 'https://example.com/variant-image.jpg' })
+//   @IsUrl({}, { message: 'URL must be a valid URL' })
+//   @IsNotEmpty({ message: 'URL is required' })
+//   url: string
 
-  @ApiPropertyOptional({ example: 'Red variant image' })
-  @IsString({ message: 'Alt text must be a string' })
-  @MaxLength(255, { message: 'Alt text must be at most 255 characters' })
-  @IsOptional()
-  altText?: string
-}
+//   @ApiPropertyOptional({ example: 'Red variant image' })
+//   @IsString({ message: 'Alt text must be a string' })
+//   @MaxLength(255, { message: 'Alt text must be at most 255 characters' })
+//   @IsOptional()
+//   altText?: string
+// }
 
 /**
  * DTO for creating product variants
@@ -75,9 +87,9 @@ export class CreateProductVariantDto {
   @ApiProperty({ example: 'SKU-12345' })
   @IsString({ message: 'SKU must be a string' })
   @MaxLength(100, { message: 'SKU must be at most 100 characters' })
-  @MinLength(1, { message: 'SKU must be at least 1 character' })
-  @IsNotEmpty({ message: 'SKU is required' })
-  sku: string
+  // @MinLength(1, { message: 'SKU must be at least 1 character' })
+  @IsOptional()
+  sku?: string
 
   @ApiProperty({ example: 'Red - Large' })
   @IsString({ message: 'Name must be a string' })
@@ -89,9 +101,9 @@ export class CreateProductVariantDto {
   @ApiProperty({ example: 'BAR-67890' })
   @IsString({ message: 'Barcode must be a string' })
   @MaxLength(100, { message: 'Barcode must be at most 100 characters' })
-  @MinLength(1, { message: 'Barcode must be at least 1 character' })
-  @IsNotEmpty({ message: 'Barcode is required' })
-  barcode: string
+  // @MinLength(1, { message: 'Barcode must be at least 1 character' })
+  @IsOptional()
+  barcode?: string | undefined
 
   @ApiProperty({ example: 50.0, description: 'Cost price in decimal format' })
   @IsNumber({}, { message: 'Cost price must be a number' })
@@ -111,7 +123,7 @@ export class CreateProductVariantDto {
   @IsInt({ message: 'Stock on hand must be an integer' })
   @Min(0, { message: 'Stock on hand must be at least 0' })
   @IsOptional()
-  stockOnHand: number
+  stockOnHand?: number
 
   @ApiPropertyOptional({ example: 'https://example.com/variant.jpg' })
   @IsUrl({}, { message: 'Image URL must be a valid URL' })
@@ -132,7 +144,8 @@ export class CreateProductVariantDto {
   maxStockThreshold?: number
 
   @ApiPropertyOptional({ example: true, default: true })
-  @IsBoolean({ message: 'isActive must be a boolean value' })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean({ message: 'isPrimary must be a boolean' })
   @IsOptional()
   isActive?: boolean
 
@@ -174,7 +187,8 @@ export class CreateProductCategoryDto {
     description: 'Is this the primary category for breadcrumbs?',
     default: false
   })
-  @IsBoolean({ message: 'isPrimary must be a boolean value' })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean({ message: 'isPrimary must be a boolean' })
   isPrimary: boolean
 }
 
@@ -208,8 +222,8 @@ export class CreateProductDto {
   @IsString({ message: 'Code must be a string' })
   @MaxLength(50, { message: 'Code must be at most 50 characters' })
   @MinLength(1, { message: 'Code must be at least 1 character' })
-  @IsNotEmpty({ message: 'Code is required' })
-  code: string
+  @IsOptional({ message: 'Code is required' })
+  code?: string
 
   @ApiProperty({ example: 'Premium Cotton T-Shirt' })
   @IsString({ message: 'Name must be a string' })
@@ -228,7 +242,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({ example: 'High-quality cotton t-shirt with superior comfort' })
   @IsString({ message: 'Description must be a string' })
-  @MaxLength(2000, { message: 'Description must be at most 2000 characters' })
+  @MaxLength(10000, { message: 'Description must be at most 10000 characters' })
   @IsOptional()
   description?: string
 
@@ -237,15 +251,17 @@ export class CreateProductDto {
     example: ProductStatus.PUBLISHED,
     default: ProductStatus.PUBLISHED
   })
-  @IsEnum(ProductStatus, { message: 'Status must be a valid ProductStatus' })
+  @IsEnum(ProductStatus, {
+    message: `Status must be a valid ProductStatus ${Object.values(ProductStatus).join(', ')}`
+  })
   @IsOptional()
   status?: ProductStatus
 
   @ApiProperty({ example: 29.99, description: 'Base price of the product' })
-  @IsNumber({}, { message: 'Base price must be a number' })
-  @Min(0, { message: 'Base price must be at least 0' })
-  @IsNotEmpty({ message: 'Base price is required' })
   @Type(() => Number)
+  @Min(0, { message: 'Base price must be at least 0' })
+  @IsNumber({}, { message: 'Base price must be a number' })
+  @IsNotEmpty({ message: 'Base price is required' })
   basePrice: number
 
   @ApiProperty({
@@ -268,19 +284,20 @@ export class CreateProductDto {
     type: [CreateProductCategoryDto],
     description: 'Categories this product belongs to (including primary)'
   })
-  @IsArray({ message: 'Categories must be an array' })
   @ValidateNested({ each: true })
   @Type(() => CreateProductCategoryDto)
   @ArrayMinSize(1, { message: 'At least one category is required' })
+  @IsArray({ message: 'Categories must be an array' })
   categories: CreateProductCategoryDto[]
 
   @ApiPropertyOptional({
     type: [CreateProductImageDto],
     description: 'Product images'
   })
-  @IsArray({ message: 'Images must be an array' })
   @ValidateNested({ each: true })
   @Type(() => CreateProductImageDto)
+  @IsArray({ message: 'Images must be an array' })
+  @ArrayMinSize(1, { message: 'At least one image is required' })
   @IsOptional()
   images?: CreateProductImageDto[]
 
@@ -288,10 +305,11 @@ export class CreateProductDto {
     type: [CreateProductVariantDto],
     description: 'Product variants with their attributes and stock'
   })
-  @IsArray({ message: 'Variants must be an array' })
   @ValidateNested({ each: true })
   @Type(() => CreateProductVariantDto)
   @ArrayMinSize(1, { message: 'At least one variant is required' })
+  @IsArray({ message: 'Variants must be an array' })
+  @IsOptional()
   variants: CreateProductVariantDto[]
 
   // @ApiProperty({

@@ -88,12 +88,12 @@ export class ValidateDtoService {
     const errors: string[] = []
 
     // Check for unique product code
-    const existingProduct = await this.prismaService.product.findUnique({
-      where: { code: dto.code }
-    })
-    if (existingProduct) {
-      errors.push(`Product with code ${dto.code} already exists`)
-    }
+    // const existingProduct = await this.prismaService.product.findUnique({
+    //   where: { code: dto.code }
+    // })
+    // if (existingProduct) {
+    //   errors.push(`Product with code ${dto.code} already exists`)
+    // }
 
     // Check for unique product slug
     if (dto.slug) {
@@ -120,7 +120,11 @@ export class ValidateDtoService {
     }
 
     // Check for duplicate barcodes across all variants
-    const barcodes = dto.variants.map((v) => v.barcode)
+    const barcodes = dto.variants
+      .map(
+        (v) => v.barcode // can be a undefined
+      )
+      .filter(Boolean) // Filter out null/undefined barcodes
     const uniqueBarcodes = new Set(barcodes)
     if (barcodes.length !== uniqueBarcodes.size) {
       errors.push('Duplicate barcodes found in variants')
@@ -144,28 +148,28 @@ export class ValidateDtoService {
     // Validate that variant attribute values match product attributes
     // const productAttributeIds = dto.attributes.map((a) => a.attributeId)
 
-    for (const variant of dto.variants) {
-      const variantAttributeValueIds = variant.attributeValues.map((av) => av.attributeValueId)
+    // for (const variant of dto.variants) {
+    //   const variantAttributeValueIds = variant.attributeValues.map((av) => av.attributeValueId)
 
-      // Get the attribute IDs for the variant's attribute values
-      const attributeValues = await this.prismaService.attributeValue.findMany({
-        where: { id: { in: variantAttributeValueIds } },
-        select: { attributeId: true }
-      })
+    //   // Get the attribute IDs for the variant's attribute values
+    //   const attributeValues = await this.prismaService.attributeValue.findMany({
+    //     where: { id: { in: variantAttributeValueIds } },
+    //     select: { attributeId: true }
+    //   })
 
-      // const variantAttributeIds = attributeValues.map((av) => av.attributeId)
+    //   const variantAttributeIds = attributeValues.map((av) => av.attributeId)
 
-      // Check if all variant attributes are in product attributes
-      // const invalidAttributes = variantAttributeIds.filter(
-      //   (id) => !productAttributeIds.includes(id)
-      // )
+    //   // Check if all variant attributes are in product attributes
+    //   const invalidAttributes = variantAttributeIds.filter(
+    //     (id) => !productAttributeIds.includes(id)
+    //   )
 
-      // if (invalidAttributes.length > 0) {
-      //   errors.push(
-      //     `Variant "${variant.name}" has attribute values that don't match product attributes`
-      //   )
-      // }
-    }
+    //   if (invalidAttributes.length > 0) {
+    //     errors.push(
+    //       `Variant "${variant.name}" has attribute values that don't match product attributes`
+    //     )
+    //   }
+    // }
 
     // Validate price logic
     for (const variant of dto.variants) {
@@ -330,12 +334,12 @@ export class ValidateDtoService {
 
     // Check for duplicate SKUs in variants being added/updated
     if (dto.variants) {
-      const newSkus = dto.variants.filter((v) => !v._delete && v.sku).map((v) => v.sku)
+      // const newSkus = dto.variants.filter((v) => !v._delete && v.sku).map((v) => v.sku)
 
-      const uniqueNewSkus = new Set(newSkus)
-      if (newSkus.length !== uniqueNewSkus.size) {
-        errors.push('Duplicate SKUs found in variant updates')
-      }
+      // const uniqueNewSkus = new Set(newSkus)
+      // if (newSkus.length !== uniqueNewSkus.size) {
+      //   errors.push('Duplicate SKUs found in variant updates')
+      // }
 
       // Check for duplicate barcodes
       const newBarcodes = dto.variants.filter((v) => !v._delete && v.barcode).map((v) => v.barcode)
@@ -346,26 +350,35 @@ export class ValidateDtoService {
       }
 
       // Check if new SKUs/barcodes already exist in database (excluding current product variants)
-      if (newSkus.length > 0 || newBarcodes.length > 0) {
+      if (
+        // newSkus.length > 0 ||
+        newBarcodes.length > 0
+      ) {
         const existingVariants = await this.prismaService.productVariant.findMany({
           where: {
             productId: { not: productId },
-            OR: [{ sku: { in: newSkus } }, { barcode: { in: newBarcodes } }]
+            OR: [
+              // { sku: { in: newSkus } }
+              { barcode: { in: newBarcodes } }
+            ]
           }
         })
 
         if (existingVariants.length > 0) {
-          const conflictingSkus = existingVariants
-            .filter((v) => newSkus.includes(v.sku))
-            .map((v) => v.sku)
+          // const conflictingSkus = existingVariants
+          //   .filter((v) => newSkus.includes(v.sku))
+          //   .map((v) => v.sku)
           const conflictingBarcodes = existingVariants
             .filter((v) => newBarcodes.includes(v.barcode))
             .map((v) => v.barcode)
 
-          if (conflictingSkus.length > 0 || conflictingBarcodes.length > 0) {
+          if (
+            // conflictingSkus.length > 0 ||
+            conflictingBarcodes.length > 0
+          ) {
             errors.push(
               `SKUs or barcodes already exist in other products: ${[
-                ...conflictingSkus,
+                // ...conflictingSkus,
                 ...conflictingBarcodes
               ].join(', ')}`
             )

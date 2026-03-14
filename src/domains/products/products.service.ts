@@ -9,18 +9,17 @@ import {
 } from 'domains/products/dto/find-all-product.dto'
 import { UpdateProductDto } from 'domains/products/dto/update-product.dto'
 import { FindAllProductService } from 'domains/products/find-all-product.service'
-import { InvalidateFilterCacheService } from 'domains/products/invalidate-filter-cache.service'
 import { UpdateProductService } from 'domains/products/update-product.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
 import { PaginationType } from 'enums'
-import { slugifyString, UtcDateRange } from 'utils'
+import { UtcDateRange } from 'utils'
+import { generateProductCode, generateVariantSku, slugifyString } from 'utils'
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly validateDtoService: ValidateDtoService,
-    private readonly invalidateFilterCacheService: InvalidateFilterCacheService,
     private readonly updateProductService: UpdateProductService,
     private readonly findAllProductService: FindAllProductService
   ) {}
@@ -42,9 +41,11 @@ export class ProductsService {
     // Step 3: Create product with all relations in a transaction
     const product = await this.prismaService.$transaction(async (tx) => {
       // Create the main product
+      const productCode = createProductDto.code || generateProductCode(createProductDto.name)
+
       const createdProduct = await tx.product.create({
         data: {
-          code: createProductDto.code,
+          code: productCode,
           name: createProductDto.name,
           slug: createProductDto.slug || slugifyString(createProductDto.name),
           description: createProductDto.description,
@@ -73,7 +74,8 @@ export class ProductsService {
           data: createProductDto.images.map((img) => ({
             productId: createdProduct.id,
             url: img.url,
-            altText: img.altText || null
+            altText: img.altText || null,
+            displayOrder: img.displayOrder || 1
           }))
         })
       }
@@ -95,7 +97,7 @@ export class ProductsService {
           const createdVariant = await tx.productVariant.create({
             data: {
               productId: createdProduct.id,
-              sku: variant.sku,
+              sku: generateVariantSku(productCode, variant.attributeValues || []),
               name: variant.name,
               barcode: variant.barcode,
               costPrice: new Prisma.Decimal(variant.costPrice),
@@ -142,10 +144,6 @@ export class ProductsService {
       return createdProduct
     })
 
-    // Step 4: Invalidate filter cache for affected categories
-    await this.invalidateFilterCacheService.invalidateFilterCacheForCreate(createProductDto)
-
-    // Step 5: Return the created product with all relations
     return this.findById(product.id)
   }
 
@@ -228,10 +226,7 @@ export class ProductsService {
       existingProduct
     )
 
-    // Step 3: Get old categories for cache invalidation
-    const oldCategoryIds = existingProduct.categories.map((c) => c.categoryId)
-
-    // Step 4: Update product with all relations in a transaction
+    // Step 3: Update product with all relations in a transaction
     await this.prismaService.$transaction(async (tx) => {
       // Update the main product fields
       // We must need the updatedData variable because the createProductDto can contains other fields that are not exist in Product model
@@ -278,17 +273,14 @@ export class ProductsService {
 
       // Handle product variants
       if (updateProductDto.variants) {
-        await this.updateProductService.updateProductVariants(tx, id, updateProductDto.variants)
+        await this.updateProductService.updateProductVariants(
+          tx,
+          id,
+          existingProduct.code,
+          updateProductDto.variants
+        )
       }
     })
-
-    // Step 5: Invalidate filter cache for old and new categories
-    await this.invalidateFilterCacheService.invalidateFilterCacheForUpdate(
-      oldCategoryIds,
-      updateProductDto
-    )
-
-    // Step 6: Return the updated product with all relations
     return this.findById(id)
   }
 
