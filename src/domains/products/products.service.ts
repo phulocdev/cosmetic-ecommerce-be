@@ -162,15 +162,6 @@ export class ProductsService {
           }
         },
         images: true,
-        // attributes: {
-        //   include: {
-        //     attribute: {
-        //       include: {
-        //         values: true
-        //       }
-        //     }
-        //   }
-        // },
         variants: {
           include: {
             attributeValues: {
@@ -189,6 +180,41 @@ export class ProductsService {
 
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`)
+    }
+
+    return product
+  }
+
+  async findBySlug(slug: string) {
+    const product = await this.prismaService.product.findUnique({
+      where: { slug },
+      include: {
+        brand: true,
+        countryOfOrigin: true,
+        categories: {
+          include: {
+            category: true
+          }
+        },
+        images: true,
+        variants: {
+          include: {
+            attributeValues: {
+              include: {
+                attributeValue: {
+                  include: {
+                    attribute: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${slug} not found`)
     }
 
     return product

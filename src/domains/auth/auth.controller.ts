@@ -79,11 +79,4 @@ export class AuthController {
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto)
   }
-
-  @Get('me')
-  @ResponseMessage('User profile fetched successfully')
-  @HttpCode(HttpStatus.OK)
-  async getProfile() {
-    return 'Loc'
-  }
 }

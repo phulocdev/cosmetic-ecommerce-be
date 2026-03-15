@@ -13,6 +13,7 @@ import {
 import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger'
 import { ParseUUIDPipe, ResponseMessage } from 'core'
 import { Public } from 'core/decorators/public.decorator'
+import { DateRangePipe, ParsedDateRange } from 'core/pipes/date-range.pipe'
 import {
   CursorPaginatedProductListResponse,
   OffsetPaginatedProductListResponse,
@@ -21,7 +22,6 @@ import {
 import { ProductsService } from 'domains/products/products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
-import { DateRangePipe, ParsedDateRange } from 'core/pipes/date-range.pipe'
 
 @Controller('products')
 export class ProductsController {
@@ -117,11 +117,10 @@ export class ProductsController {
     return this.productsService.update(id, updateProductDto)
   }
 
-  @Get('seed')
   @Public()
-  seed() {
-    return { message: 'Seeding endpoint is disabled' }
-    // return this.productSeedService.seedProducts()
+  @Get('by-slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.productsService.findBySlug(slug)
   }
 
   @Public()

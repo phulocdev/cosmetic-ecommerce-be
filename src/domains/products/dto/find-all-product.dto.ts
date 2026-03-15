@@ -276,7 +276,7 @@ export class ProductQueryDto extends PaginationQueryDto {
   @IsBoolean({ message: 'Include images must be a boolean' })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
-  includeImages?: boolean
+  includeImages?: boolean = true
 
   @ApiPropertyOptional({
     example: true,
