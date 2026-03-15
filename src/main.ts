@@ -12,7 +12,10 @@ import express from 'express'
 const server = express()
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, new ExpressAdapter(server))
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    new ExpressAdapter(server)
+  )
 
   app.use(helmet())
 
