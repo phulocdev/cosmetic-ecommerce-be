@@ -1,0 +1,102 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WelcomeEmail = void 0;
+const components_1 = require("@react-email/components");
+const React = __importStar(require("react"));
+const WelcomeEmail = ({ name, confirmationUrl }) => (React.createElement(components_1.Html, null,
+    React.createElement(components_1.Head, null),
+    React.createElement(components_1.Preview, null,
+        "Welcome to our platform, ",
+        name,
+        "!"),
+    React.createElement(components_1.Body, { style: main },
+        React.createElement(components_1.Container, { style: container },
+            React.createElement(components_1.Heading, { style: h1 },
+                "Welcome, ",
+                name,
+                "! \uD83D\uDC4B"),
+            React.createElement(components_1.Text, { style: text }, "Thanks for signing up! We're excited to have you on board."),
+            React.createElement(components_1.Section, { style: buttonContainer },
+                React.createElement(components_1.Button, { style: button, href: confirmationUrl }, "Confirm Your Email")),
+            React.createElement(components_1.Text, { style: footer }, "If you didn't create this account, you can safely ignore this email.")))));
+exports.WelcomeEmail = WelcomeEmail;
+exports.default = exports.WelcomeEmail;
+const main = {
+    backgroundColor: '#f6f9fc',
+    fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif'
+};
+const container = {
+    backgroundColor: '#ffffff',
+    margin: '0 auto',
+    padding: '20px 0 48px',
+    marginBottom: '64px'
+};
+const h1 = {
+    color: '#333',
+    fontSize: '24px',
+    fontWeight: 'bold',
+    margin: '40px 0',
+    padding: '0',
+    textAlign: 'center'
+};
+const text = {
+    color: '#333',
+    fontSize: '16px',
+    lineHeight: '26px',
+    textAlign: 'center'
+};
+const buttonContainer = {
+    textAlign: 'center',
+    margin: '32px 0'
+};
+const button = {
+    backgroundColor: '#5469d4',
+    borderRadius: '4px',
+    color: '#fff',
+    fontSize: '16px',
+    textDecoration: 'none',
+    textAlign: 'center',
+    display: 'inline-block',
+    padding: '12px 24px'
+};
+const footer = {
+    color: '#8898aa',
+    fontSize: '12px',
+    lineHeight: '16px',
+    textAlign: 'center',
+    marginTop: '32px'
+};
+//# sourceMappingURL=welcome.js.map
