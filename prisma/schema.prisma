@@ -331,9 +331,11 @@ model InboundTransactionDetail {
 model User {
   id String @id @default(uuid())
 
-  email String @unique
+  email String? @unique
+  googleId   String? @unique
+  facebookId String? @unique   
   password String
-  code String? @unique
+  code String @unique
   fullName String? @default("") // when has @default here, the value of this filed can be empty string "" -> nullable
   phoneNumber String? @default("")
   isActive Boolean? @default(true)

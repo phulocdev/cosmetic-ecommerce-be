@@ -33,7 +33,7 @@
     "@nestjs/config": "4.0.0",
     "@nestjs/core": "11.0.12",
     "@nestjs/event-emitter": "^3.0.1",
-    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "2.1.0",
     "@nestjs/passport": "^11.0.4",
     "@nestjs/platform-socket.io": "11.0.11",
@@ -42,8 +42,8 @@
     "@nestjs/terminus": "^11.0.0",
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/websockets": "11.0.11",
-    "@prisma/adapter-pg": "^7.3.0",
-    "@prisma/client": "^7.3.0",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
     "@react-email/preview-server": "^5.2.5",
     "api-query-params": "5.4.0",
     "axios": "1.8.4",
@@ -63,6 +63,7 @@
     "nanoid": "3.3.8",
     "nest-winston": "^1.10.2",
     "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "pi": "2.0.4",
     "pipe": "1.1.0",
@@ -95,6 +96,8 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^20.19.30",
     "@types/nodemailer": "^7.0.9",
+    "@types/passport-facebook": "^3.0.4",
+    "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "1.0.38",
     "@types/supertest": "6.0.0",
@@ -112,8 +115,9 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.13",
     "npm": "11.2.0",
+    "passport-facebook": "^3.0.0",
     "prettier": "3.0.0",
-    "prisma": "^7.3.0",
+    "prisma": "^7.5.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "socket.io-client": "4.8.1",
@@ -123,7 +127,10 @@
     "ts-loader": "9.4.3",
     "ts-node": "10.9.1",
     "tsconfig-paths": "4.2.0",
-    "typescript": "^5.1.3"
+    "typescript": "5.8.3"
+  },
+  "engines": {
+    "node": "24.x"
   },
   "jest": {
     "moduleFileExtensions": [

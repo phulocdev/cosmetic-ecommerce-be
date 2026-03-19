@@ -1,18 +1,16 @@
 // src/auth/guards/jwt-auth.guard.ts
 import {
-  Injectable,
+  BadRequestException,
   ExecutionContext,
   Inject,
-  UnauthorizedException,
-  BadRequestException
+  Injectable,
+  UnauthorizedException
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { TokenExpiredError } from '@nestjs/jwt'
 import { AuthGuard } from '@nestjs/passport'
-import { AuthenticatedUser } from 'core/decorators'
 import { IS_PUBLIC_KEY } from 'core/decorators/public.decorator'
 import { REDIS_CLIENT } from 'database/redis/redis.module'
-import { Request } from 'express'
 import Redis from 'ioredis/built/Redis'
 import { ExtractJwt } from 'passport-jwt'
 import { Observable } from 'rxjs'

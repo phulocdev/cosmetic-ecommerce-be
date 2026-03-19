@@ -21,14 +21,6 @@ export const validationSchema = Joi.object({
 
   // Database
   DATABASE_URL: Joi.string().required().description('PostgreSQL connection string'),
-  DATABASE_HOST: Joi.string().default('localhost'),
-  DATABASE_PORT: Joi.number().port().default(5432),
-  DATABASE_NAME: Joi.string().default('nestjs_db'),
-  DATABASE_USER: Joi.string().default('postgres'),
-  DATABASE_PASSWORD: Joi.string().default('postgres'),
-  DATABASE_POOL_MIN: Joi.number().default(2),
-  DATABASE_POOL_MAX: Joi.number().default(10),
-  DATABASE_LOGGING: Joi.boolean().default(false),
 
   // JWT
   JWT_ACCESS_EXPIRATION: Joi.string().default('15m'),
@@ -61,10 +53,6 @@ export const validationSchema = Joi.object({
     .default('debug'),
   LOG_FORMAT: Joi.string().valid('combined', 'json', 'simple').default('combined'),
 
-  // Sentry
-  SENTRY_DSN: Joi.string().uri().allow('').optional(),
-  SENTRY_ENABLED: Joi.boolean().default(false),
-
   // Redis
   REDIS_HOST: Joi.string().default('localhost'),
   REDIS_PORT: Joi.number().port().default(6379),
@@ -79,9 +67,6 @@ export const validationSchema = Joi.object({
 
   // Added validation for CLIENT_APP_URL
   CLIENT_APP_URL: Joi.string().uri().default('http://localhost:3000'),
-
-  // Added validation for CLIENT_APP_URL_2
-  CLIENT_APP_URL_2: Joi.string().uri().allow('').optional(),
 
   // Added validation for CLOUDINARY_CLOUD_NAME
   CLOUDINARY_CLOUD_NAME: Joi.string().allow('').optional(),
@@ -113,5 +98,9 @@ export const validationSchema = Joi.object({
   // Added validation for MAX_LOGIN_ATTEMPTS
   MAX_LOGIN_ATTEMPTS: Joi.number().default(5),
 
-  APP_REQUEST_TIMEOUT_MS: Joi.number().default(30000) // 30 seconds
+  APP_REQUEST_TIMEOUT_MS: Joi.number().default(30000), // 30 seconds
+
+  GOOGLE_CLIENT_ID: Joi.string().required().description('Google OAuth Client ID'),
+  GOOGLE_CLIENT_SECRET: Joi.string().required().description('Google OAuth Client Secret'),
+  GOOGLE_CALLBACK_URL: Joi.string().uri().required().description('Google OAuth Callback URL')
 })

@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common'
 import { MailerService as MailerPackageService } from '@nestjs-modules/mailer'
 import { render } from '@react-email/render'
 import { ConfigService } from '@nestjs/config'
-import WelcomeEmail from '../../../emails/welcome'
-import ResetPasswordTemplate from '../../../emails/reset-password-template'
+import WelcomeEmail from '../../emails/welcome'
+import ResetPasswordTemplate from '../../emails/reset-password-template'
 
 @Injectable()
 export class EmailService {
@@ -20,7 +20,11 @@ export class EmailService {
 
   async renderPasswordResetEmail(name: string, resetToken: string): Promise<string> {
     return render(
-      ResetPasswordTemplate({ name, resetToken, clientBaseUrl: this.configService.get('CLIENT_BASE_URL') }),
+      ResetPasswordTemplate({
+        name,
+        resetToken,
+        clientBaseUrl: this.configService.get('CLIENT_BASE_URL')
+      }),
       {
         pretty: this.configService.get('NODE_ENV') !== 'production' // Makes HTML readable (disable in production)
       }

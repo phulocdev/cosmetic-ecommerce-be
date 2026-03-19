@@ -2,12 +2,10 @@ import { Injectable } from '@nestjs/common'
 import { Prisma, ProductImage, ProductVariant } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
 import {
-  UpdateProductAttributeDto,
   UpdateProductCategoryDto,
   UpdateProductImageDto,
   UpdateProductVariantDto,
-  UpdateVariantAttributeValueDto,
-  UpdateVariantImageDto
+  UpdateVariantAttributeValueDto
 } from 'domains/products/dto'
 import { generateVariantSku } from 'utils'
 
