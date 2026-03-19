@@ -5,7 +5,8 @@
  */
 
 import { createParamDecorator, ExecutionContext } from '@nestjs/common'
-import { UserRole, User } from '@prisma/client'
+import { UserRole } from 'enums'
+import { User } from 'types'
 
 export interface AuthenticatedUser extends Partial<User> {
   id: string

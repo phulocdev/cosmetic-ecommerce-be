@@ -1,7 +1,20 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Post, Res } from '@nestjs/common'
-import { CurrentUser } from 'core'
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Ip,
+  Post,
+  Req,
+  Res,
+  UseGuards
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config/dist/config.service'
+import { CurrentUser, GoogleAuthGuard } from 'core'
 import { Public } from 'core/decorators/public.decorator'
 import { ResponseMessage } from 'core/decorators/response-message.decorator'
+import { FacebookAuthGuard } from 'core/guards/facebook-auth.guard'
 import { AuthService } from 'domains/auth/auth.service'
 import {
   ChangePasswordDto,
@@ -17,7 +30,10 @@ import { normalizeIp } from 'utils'
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService
+  ) {}
 
   @Public()
   @Post('register')
@@ -78,5 +94,42 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto)
+  }
+
+  @Get('me')
+  @ResponseMessage('Get current user info successfully')
+  @HttpCode(HttpStatus.OK)
+  async getCurrentUser(@CurrentUser() accessTokenPayload: AccessTokenPayload) {
+    return this.authService.getCurrentUser(accessTokenPayload.userId)
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  googleAuth() {
+    // Guard handles the redirect automatically
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(@Req() req, @Res() res: Response) {
+    // req.user is set by GoogleStrategy.validate()
+    return this.authService.handleOAuthCallback(req.user, res)
+  }
+
+  @Public()
+  @Get('facebook')
+  @UseGuards(FacebookAuthGuard)
+  facebookAuth() {
+    // Guard redirects to Facebook automatically
+  }
+
+  @Public()
+  @Get('facebook/callback')
+  @UseGuards(FacebookAuthGuard)
+  async facebookCallback(@Req() req, @Res() res: Response) {
+    // req.user is set by FacebookStrategy.validate()
+    return this.authService.handleOAuthCallback(req.user, res)
   }
 }

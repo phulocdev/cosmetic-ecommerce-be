@@ -76,7 +76,6 @@ async function bootstrap() {
       origin: corsOrigin,
       credentials: true
     })
-    logger.log(`CORS enabled: ${corsOrigin.join(', ')}`)
   }
 
   app.set('trust proxy', 1)

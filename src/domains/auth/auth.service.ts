@@ -2,6 +2,7 @@ import { BadRequestException, Inject, Injectable, UnauthorizedException } from '
 import { ConfigService } from '@nestjs/config'
 import { JwtService, TokenExpiredError } from '@nestjs/jwt'
 import * as bcrypt from 'bcrypt'
+import { EntityNotFoundException } from 'core/exceptions/custom.exceptions'
 import crypto from 'crypto'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { REDIS_CLIENT } from 'database/redis/redis.module'
@@ -12,9 +13,12 @@ import {
   RegisterDto,
   ResetPasswordDto
 } from 'domains/auth/dtos/auth.dto'
+import { FacebookUser } from 'domains/auth/strategies'
+import { GoogleUser } from 'domains/auth/strategies/google.strategy'
 import { EmailProducer } from 'domains/email/email.producer'
 import { UsersService } from 'domains/users/users.service'
 import { UserRole } from 'enums'
+import { Response } from 'express'
 import Redis from 'ioredis'
 import ms from 'ms'
 import { AccessTokenPayload, RefreshTokenPayload, User } from 'types'
@@ -59,13 +63,12 @@ export class AuthService {
 
     const hashedPassword = await this.hashPassword(registerDto.password)
 
-    const user = await this.prismaService.user.create({
-      data: {
-        email: registerDto.email,
-        password: hashedPassword,
-        fullName: registerDto.fullName,
-        phoneNumber: registerDto.phoneNumber
-      }
+    const user = await this.usersService.create({
+      email: registerDto.email,
+      fullName: registerDto.fullName,
+      phoneNumber: registerDto.phoneNumber,
+      password: hashedPassword,
+      role: UserRole.CUSTOMER
     })
 
     // When user logs in / register, get/set their current token version
@@ -120,7 +123,7 @@ export class AuthService {
       if (ipAddress) {
         await this.recordFailedLogin(loginDto.email, ipAddress)
       }
-      throw new BadRequestException('Invalid credentials')
+      throw new BadRequestException('Email/Password không chính xác')
     }
 
     if (!user.isActive) {
@@ -419,6 +422,10 @@ export class AuthService {
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.usersService.findByEmail(forgotPasswordDto.email)
 
+    if (!user) {
+      throw new EntityNotFoundException('User', forgotPasswordDto.email)
+    }
+
     // Generate password reset token and save to database
     const resetPasswordToken = await this.generateSecureToken()
 
@@ -631,5 +638,113 @@ export class AuthService {
       // Store in Redis with TTL matching token expiration
       await this.redis.setex(`${this.ACCESS_TOKEN_BLACKLIST_PREFIX}${jti}`, ttl, userId)
     }
+  }
+
+  async getCurrentUser(userId: string) {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId }
+    })
+    if (!user) {
+      throw new BadRequestException('User not found')
+    }
+
+    return this.sanitizeUser(user)
+  }
+
+  async findOrCreateUser(googleUser: GoogleUser) {
+    let user = await this.usersService.findByGoogleId(googleUser.googleId)
+
+    if (!user) {
+      user = await this.usersService.findByEmail(googleUser.email)
+    }
+
+    if (!user) {
+      // First-time Google login — create the user
+      const secureRandomPassword = await this.generateSecureToken(16) // Generate a random password for Google users, length 16 bytes => 32 characters hex string
+      const hashedPassword = await this.hashPassword(secureRandomPassword) // Random password for Google users
+
+      user = await this.usersService.create({
+        googleId: googleUser.googleId,
+        email: googleUser.email,
+        fullName: `${googleUser.firstName} ${googleUser.lastName}`,
+        avatarUrl: googleUser.avatar,
+        password: hashedPassword,
+        role: UserRole.CUSTOMER
+      })
+    } else if (!user.googleId) {
+      // Existing email user — link their Google account
+      user = await this.usersService.update(user.id, {
+        googleId: googleUser.googleId,
+        avatarUrl: user.avatarUrl ?? googleUser.avatar
+      })
+    }
+
+    return user
+  }
+
+  async findOrCreateUserByFacebook(facebookUser: FacebookUser) {
+    let user = await this.usersService.findByFacebookId(facebookUser.facebookId)
+
+    if (!user && facebookUser.email) {
+      user = await this.usersService.findByEmail(facebookUser.email)
+    }
+
+    if (!user) {
+      const secureRandomPassword = await this.generateSecureToken(16)
+      const hashedPassword = await this.hashPassword(secureRandomPassword)
+
+      // New user — create account
+      // Note: email may be null here for phone-only FB accounts
+      user = await this.usersService.create({
+        facebookId: facebookUser.facebookId,
+        email: facebookUser.email,
+        fullName: facebookUser.displayName,
+        avatarUrl: facebookUser.avatar,
+        password: hashedPassword,
+        role: UserRole.CUSTOMER
+      })
+    } else if (!user.facebookId) {
+      // Existing account (e.g. signed up via email or Google) —
+      // link Facebook to it
+      user = await this.usersService.update(user.id, {
+        facebookId: facebookUser.facebookId,
+        avatarUrl: user.avatarUrl ?? facebookUser.avatar
+      })
+    }
+
+    return user
+  }
+
+  async handleOAuthCallback(user: User, res: Response) {
+    const tokenVersion = Number(await this.getTokenVersion(user.id)) || 0
+    const accessTokenJti = uuidv4()
+    const refreshTokenJti = uuidv4()
+
+    const accessTokenPayload: AccessTokenPayload = {
+      userId: user.id,
+      jti: accessTokenJti,
+      email: user.email,
+      role: user.role as UserRole,
+      version: tokenVersion
+    }
+
+    const refreshTokenPayload: RefreshTokenPayload = {
+      userId: user.id,
+      jti: refreshTokenJti,
+      email: user.email,
+      role: user.role as UserRole
+    }
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this.signAccessToken(accessTokenPayload),
+      this.signRefreshToken(refreshTokenPayload)
+    ])
+
+    await this.createRefreshTokenRecord(refreshTokenJti, user.id, hashToken(refreshToken))
+
+    const frontendUrl = this.configService.get('cors.origin')
+    res.redirect(
+      `${frontendUrl}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`
+    )
   }
 }

@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { UserRole, User } from '@prisma/client'
 import { Exclude, Expose } from 'class-transformer'
 import { BaseEntity } from 'core'
+import { UserRole } from 'enums'
 
 @Exclude()
 export class UserEntity extends BaseEntity {

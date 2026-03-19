@@ -80,7 +80,6 @@ async function bootstrap() {
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
       exposedHeaders: ['X-Total-Count', 'X-Page-Count']
     })
-    logger.log(`CORS enabled for origins: ${corsOrigin.join(', ')}`)
   }
 
   // Trust proxy (for production behind load balancer)

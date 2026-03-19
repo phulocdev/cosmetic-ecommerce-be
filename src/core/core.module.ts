@@ -8,6 +8,7 @@ import {
   corsConfig,
   databaseConfig,
   jwtConfig,
+  oauthConfig,
   securityConfig,
   swaggerConfig,
   throttleConfig
@@ -33,7 +34,8 @@ import { TerminusModule } from '@nestjs/terminus'
         jwtConfig,
         securityConfig,
         swaggerConfig,
-        throttleConfig
+        throttleConfig,
+        oauthConfig
       ],
       validationSchema,
       validationOptions: {

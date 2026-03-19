@@ -64,7 +64,9 @@ export interface BaseEntity {
 }
 
 export interface User extends BaseEntity {
-  email: string
+  email: string | null
+  googleId: string | null
+  facebookId: string | null
   password: string
   code: string
   fullName: string

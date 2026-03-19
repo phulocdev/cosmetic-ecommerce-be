@@ -9,7 +9,10 @@ import { ApiResponse } from 'types/common.type'
 export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
   constructor(private reflector: Reflector) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>> {
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler
+  ): Promise<Observable<ApiResponse<T>>> {
     // Check if transformation should be skipped
     const skipTransform = this.reflector.getAllAndOverride<boolean>(SKIP_TRANSFORM_KEY, [
       context.getHandler(),
@@ -26,6 +29,8 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
     ])
 
     const { statusCode } = context.switchToHttp().getResponse()
+
+    // await new Promise((resolve) => setTimeout(resolve, 3000)) // Simulate delay for testing loading states
 
     return next.handle().pipe(
       map((data) => {
