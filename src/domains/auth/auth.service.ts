@@ -117,9 +117,16 @@ export class AuthService {
       where: { email: loginDto.email }
     })
 
+    if (!user) {
+      if (ipAddress) {
+        await this.recordFailedLogin(loginDto.email, ipAddress)
+      }
+      throw new BadRequestException('Email/Password không chính xác')
+    }
+
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password)
 
-    if (!user || !isPasswordValid) {
+    if (!isPasswordValid) {
       if (ipAddress) {
         await this.recordFailedLogin(loginDto.email, ipAddress)
       }
@@ -146,6 +153,7 @@ export class AuthService {
       role: user.role as UserRole,
       version: +tokenVersion
     }
+
     const refreshTokenPayload: RefreshTokenPayload = {
       userId: user.id,
       jti: refreshTokenJti,
