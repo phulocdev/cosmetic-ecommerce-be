@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer'
 import {
   IsEmail,
   IsString,
@@ -18,6 +19,7 @@ export class RegisterDto {
   @MaxLength(50, { message: 'Password must not exceed 50 characters' })
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @IsString({ message: 'Password must be a string' })
+  @Type(() => String)
   @IsNotEmpty({ message: 'Password is required' })
   password: string
 
@@ -25,7 +27,9 @@ export class RegisterDto {
   @IsOptional()
   fullName?: string
 
-  @Matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/g, { message: 'Phone number is not in the correct format' })
+  @Matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/g, {
+    message: 'Phone number is not in the correct format'
+  })
   @IsString({ message: 'Phone number must be a string' })
   @IsOptional()
   phoneNumber?: string
@@ -37,6 +41,7 @@ export class LoginDto {
   email: string
 
   @IsString({ message: 'Password must be a string' })
+  @Type(() => String)
   @IsNotEmpty({ message: 'Password is required' })
   password: string
 }

@@ -84,6 +84,7 @@ model Product {
   variants          ProductVariant[]
   // attributes        ProductAttribute[]
   images            ProductImage[]
+  collectionProducts CollectionProduct[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
@@ -197,6 +198,7 @@ model Category {
   children    Category[] @relation("CategoryHierarchy")
   products    ProductCategory[]
   categoryAttributes  CategoryAttribute[]
+  collectionCategories CollectionCategory[]
   
   // SEO fields
   metaTitle       String?
@@ -619,6 +621,7 @@ model Attribute {
   values      AttributeValue[]
   // products    ProductAttribute[]
   categoryAttributes  CategoryAttribute[] 
+  collectionAttributes CollectionAttribute[]
 
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
@@ -746,49 +749,80 @@ model CategoryAttribute {
   @@map("CategoryAttribute")
 }
 
-// enum FilterDisplayType {
-//   CHECKBOX      // Multi-select
-//   RANGE        // Range (for numbers/prices)
-//   SWATCH        // Color swatches
-//   RADIO         // Single-select
-//   TOGGLE        // Boolean (On Sale, Free Shipping)
-// }
+model Collection {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  description String?  @default("")
+  imageUrl    String?  @default("")
+  isActive    Boolean  @default(true)
 
-// ============================================
-// FILTER CACHE (Performance Layer)
-// ============================================
-model FilterCache {
-  id              String   @id @default(uuid())
-  
-  // Composite key components
-  categoryPath    String   // "/" or "/electronics" or "/electronics/laptops"
-  filterHash      String   // MD5 of active filters (for AND logic)
-  
-  // Cached data structure
-  // {
-  //   "brands": [{"id": "...", "name": "Nike", "count": 45}],
-  //   "attributes": {
-  //     "color": [{"id": "...", "value": "Red", "count": 23}],
-  //     "size": [{"id": "...", "value": "Large", "count": 12}]
-  //   },
-  //   "countries": [...],
-  //   "priceRange": {"min": 10, "max": 500}
-  // }
-  aggregatedData  Json
-  
-  // Metadata
-  productCount    Int      @default(0)
-  variantCount    Int      @default(0)
-  computeTimeMs   Int      @default(0) // Performance monitoring
-  
-  lastComputedAt  DateTime @default(now())
-  expiresAt       DateTime
+  products    CollectionProduct[]
+  attributes  CollectionAttribute[]
+  categories CollectionCategory[]
+
+  // SEO fields
+  metaTitle       String?
+  metaDescription String?
+
+  // Soft delete
+  isDeleted Boolean   @default(false)
   deletedAt DateTime?
-  isDeleted Boolean @default(false)
-  
-  @@unique([categoryPath, filterHash])
-  @@index([categoryPath])
-  @@index([expiresAt])
-  @@index([lastComputedAt])
-  @@map("FilterCache")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("Collection")
+}
+
+// Junction table: manually assigned products to a collection
+model CollectionProduct {
+  collectionId String
+  productId    String
+  displayOrder Int      @default(0) // for manual ordering within the collection page
+
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime   @default(now())
+
+  @@id([collectionId, productId])
+  @@index([collectionId])
+  @@index([productId])
+  @@map("CollectionProduct")
+}
+
+// Junction table: which attributes (filters) are relevant to a given collection
+model CollectionAttribute {
+  collectionId String
+  attributeId  String
+  displayOrder Int        @default(0) // controls filter panel ordering
+
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  attribute    Attribute  @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime   @default(now())
+
+  @@id([collectionId, attributeId])
+  @@index([collectionId])
+  @@map("CollectionAttribute")
+}
+
+model CollectionCategory {
+  collectionId String
+  categoryId   String
+  // displayOrder Int        @default(0)
+  // Tracks whether this was auto-populated from products
+  // or explicitly set by an admin. Allows admin override/exclusion.
+  // isAutoAdded  Boolean    @default(true)
+
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  category     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime   @default(now())
+
+  @@id([collectionId, categoryId])
+  @@index([collectionId])
+  @@map("CollectionCategory")
 }
