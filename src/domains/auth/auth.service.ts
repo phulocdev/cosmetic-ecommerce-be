@@ -61,13 +61,11 @@ export class AuthService {
       }
     }
 
-    const hashedPassword = await this.hashPassword(registerDto.password)
-
     const user = await this.usersService.create({
       email: registerDto.email,
       fullName: registerDto.fullName,
       phoneNumber: registerDto.phoneNumber,
-      password: hashedPassword,
+      password: registerDto.password,
       role: UserRole.CUSTOMER
     })
 

@@ -1,29 +1,25 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
+import { Product } from '@prisma/client'
 import { Transform, Type } from 'class-transformer'
 import {
   IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
-  IsISO8601,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
-  Min,
-  MinLength
+  Min
 } from 'class-validator'
 import {
   CursorPaginatedResponseDto,
   OffsetPaginatedResponseDto,
   PaginationQueryDto
 } from 'core/dto/pagination.dto'
-import { ProductSortBy, ProductStatus, SortOrder } from 'enums'
-import { Product } from '@prisma/client'
-import { DateRangeQueryDto } from 'core/dto/date-range-query.dto'
+import { ProductSortBy, ProductStatus } from 'enums'
 
 /**
  * Request DTOs

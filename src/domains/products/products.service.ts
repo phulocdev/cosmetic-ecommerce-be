@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Prisma, Product } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { CreateProductDto } from 'domains/products/dto'
@@ -11,17 +11,21 @@ import { UpdateProductDto } from 'domains/products/dto/update-product.dto'
 import { FindAllProductService } from 'domains/products/find-all-product.service'
 import { UpdateProductService } from 'domains/products/update-product.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
+import { ProductDocument, SearchService } from 'domains/search/search.service'
 import { PaginationType } from 'enums'
 import { UtcDateRange } from 'utils'
 import { generateProductCode, generateVariantSku, slugifyString } from 'utils'
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name)
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly validateDtoService: ValidateDtoService,
     private readonly updateProductService: UpdateProductService,
-    private readonly findAllProductService: FindAllProductService
+    private readonly findAllProductService: FindAllProductService,
+    private readonly searchService: SearchService
   ) {}
 
   /**
@@ -144,7 +148,77 @@ export class ProductsService {
       return createdProduct
     })
 
-    return this.findById(product.id)
+    // Fetch full product with all relations needed for ES indexing
+    const fullProduct = await this.findById(product.id)
+
+    // Index to Elasticsearch AFTER the transaction is committed
+    // Non-blocking: log errors but don't fail the API response - Fire-and-forget indexing
+    this.indexProductToEs(fullProduct).catch((err) =>
+      this.logger.error(`Failed to index product ${product.id} to ES`, err)
+    )
+
+    return fullProduct
+  }
+
+  // Build and index the ES document from the Prisma product shape
+  private async indexProductToEs(product: any) {
+    // Collect all unique attribute values across all variants
+    const attributes: ProductDocument['attributes'] = []
+    const seen = new Set<string>()
+
+    for (const variant of product.variants ?? []) {
+      for (const vav of variant.attributeValues ?? []) {
+        const key = `${vav.attributeValue.attributeId}__${vav.attributeValueId}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        attributes.push({
+          attributeId: vav.attributeValue.attributeId,
+          attributeName: vav.attributeValue.attribute.name,
+          valueId: vav.attributeValueId,
+          value: vav.attributeValue.value
+        })
+      }
+    }
+
+    const sellingPrices = (product.variants ?? [])
+      .filter((v: any) => v.isActive)
+      .map((v: any) => Number(v.sellingPrice))
+
+    const doc: ProductDocument = {
+      id: product.id,
+      code: product.code,
+      name: product.name,
+      slug: product.slug,
+      description: product.description ?? '',
+      status: product.status,
+      basePrice: Number(product.basePrice),
+      views: product.views ?? 0,
+      brand: {
+        id: product.brand.id,
+        name: product.brand.name
+      },
+      countryOfOrigin: {
+        id: product.countryOfOrigin.id,
+        name: product.countryOfOrigin.name
+      },
+      categories: (product.categories ?? []).map((pc: any) => ({
+        id: pc.category.id,
+        name: pc.category.name,
+        slug: pc.category.slug,
+        isPrimary: pc.isPrimary
+      })),
+      attributes,
+      minSellingPrice: sellingPrices.length
+        ? Math.min(...sellingPrices)
+        : Number(product.basePrice),
+      maxSellingPrice: sellingPrices.length
+        ? Math.max(...sellingPrices)
+        : Number(product.basePrice),
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt
+    }
+
+    await this.searchService.indexProduct(doc)
   }
 
   /**

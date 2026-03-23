@@ -29,10 +29,12 @@
   },
   "dependencies": {
     "@casl/ability": "6.7.3",
+    "@elastic/elasticsearch": "^8.19.1",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@nestjs/common": "11.0.12",
     "@nestjs/config": "4.0.0",
     "@nestjs/core": "11.0.12",
+    "@nestjs/elasticsearch": "^11.1.0",
     "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "2.1.0",
