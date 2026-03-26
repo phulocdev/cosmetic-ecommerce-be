@@ -4,10 +4,11 @@ import { SearchService } from 'domains/search/search.service'
 
 @Controller('search')
 export class SearchController {
-  constructor(private readonly searchService: SearchService) {}
+  // constructor(private readonly searchService: SearchService) {}
 
   @Get('products')
   async search(@Query() query: SearchProductsDto) {
-    return this.searchService.searchProducts(query)
+    console.log('kkk')
+    // return this.searchService.searchProducts(query)
   }
 }

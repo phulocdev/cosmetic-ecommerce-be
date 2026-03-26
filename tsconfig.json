@@ -12,7 +12,6 @@
     "jsx": "react",
     "outDir": "./dist",
     "baseUrl": "./src",
-    "rootDir": "./src",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,

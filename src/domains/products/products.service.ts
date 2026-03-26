@@ -218,7 +218,7 @@ export class ProductsService {
       updatedAt: product.updatedAt
     }
 
-    await this.searchService.indexProduct(doc)
+    // await this.searchService.indexProduct(doc)
   }
 
   /**
