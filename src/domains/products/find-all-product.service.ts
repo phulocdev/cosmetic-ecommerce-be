@@ -35,7 +35,7 @@ export class FindAllProductService {
     utcDateRange?: UtcDateRange
   ): Promise<OffsetPaginatedProductListResponse> {
     const page = query.page || 1
-    const limit = query.limit || 20
+    const limit = query.limit || 10
     const skip = (page - 1) * limit
 
     // Build WHERE clause with date range if provided
@@ -134,7 +134,7 @@ export class FindAllProductService {
     const include = this.buildIncludeClause(query)
 
     // Fetch limit + 1 to check if there's a next page
-    const products = await this.prismaService.product.findMany({
+    let products = await this.prismaService.product.findMany({
       where,
       include,
       orderBy,
@@ -180,12 +180,12 @@ export class FindAllProductService {
     }
 
     // Text search (name, description, code)
-    if (query.search) {
+    if (query.searchQuery) {
       ;(where.AND as any[]).push({
         OR: [
-          { name: { contains: query.search, mode: 'insensitive' } },
-          { description: { contains: query.search, mode: 'insensitive' } },
-          { code: { contains: query.search, mode: 'insensitive' } }
+          { name: { contains: query.searchQuery, mode: 'insensitive' } },
+          { description: { contains: query.searchQuery, mode: 'insensitive' } },
+          { code: { contains: query.searchQuery, mode: 'insensitive' } }
         ]
       })
     }
@@ -591,7 +591,7 @@ export class FindAllProductService {
   private getAppliedFilters(query: ProductQueryDto): Record<string, any> {
     const applied: Record<string, any> = {}
 
-    if (query.search) applied.search = query.search
+    if (query.searchQuery) applied.searchQuery = query.searchQuery
     if (query.status) applied.status = query.status
     if (query.categoryIds) applied.categoryIds = query.categoryIds
     if (query.categorySlug) applied.categorySlug = query.categorySlug

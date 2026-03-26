@@ -2,19 +2,19 @@ import { BullModule } from '@nestjs/bull'
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { RequestLoggerMiddleware } from 'core'
+import { AuthModule } from 'domains/auth'
+import { CategoriesModule } from 'domains/categories/categories.module'
 import { EmailModule } from 'domains/email/email.module'
+import { ProductsModule } from 'domains/products'
+import { UsersModule } from 'domains/users'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { CoreModule } from './core/core.module'
-import { RedisModule } from './database/redis/redis.module'
-import { AuthModule } from 'domains/auth'
-import { UsersModule } from 'domains/users'
-import { ProductsModule } from 'domains/products'
-import { CategoriesModule } from 'domains/categories/categories.module'
 import { DatabaseModule } from './database/database.module'
-import { BrandsModule } from './domains/brands/brands.module'
-import { CountryOfOriginModule } from './domains/country-of-origin/country-of-origin.module'
 import { AttributesModule } from './domains/attributes/attributes.module'
+import { BrandsModule } from './domains/brands/brands.module'
+import { CollectionsModule } from './domains/collections/collections.module'
+import { CountryOfOriginModule } from './domains/country-of-origin/country-of-origin.module'
 import { UploadModule } from './domains/upload/upload.module'
 @Module({
   imports: [
@@ -48,7 +48,8 @@ import { UploadModule } from './domains/upload/upload.module'
     BrandsModule,
     CountryOfOriginModule,
     AttributesModule,
-    UploadModule
+    UploadModule,
+    CollectionsModule
   ],
   controllers: [AppController],
   providers: [AppService]

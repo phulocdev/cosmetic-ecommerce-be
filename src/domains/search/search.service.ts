@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
-import { ElasticsearchService } from '@nestjs/elasticsearch'
 import { SearchProductsDto } from 'domains/search/dto/search-product.dto'
 
 export interface ProductDocument {
@@ -73,99 +72,99 @@ export class SearchService implements OnApplicationBootstrap {
   private readonly INDEX = 'products'
   private readonly logger = new Logger(SearchService.name)
 
-  constructor(private readonly esService: ElasticsearchService) {}
+  // constructor(private readonly esService: ElasticsearchService) {}
 
   async onApplicationBootstrap() {
-    await this.createProductsIndex()
+    // await this.createProductsIndex()
   }
 
-  async createProductsIndex() {
-    const exists = await this.esService.indices.exists({ index: this.INDEX })
-    if (exists) {
-      this.logger.log(`Index "${this.INDEX}" already exists, skipping creation.`)
-      return
-    }
+  // async createProductsIndex() {
+  //   const exists = await this.esService.indices.exists({ index: this.INDEX })
+  //   if (exists) {
+  //     this.logger.log(`Index "${this.INDEX}" already exists, skipping creation.`)
+  //     return
+  //   }
 
-    await this.esService.indices.create({
-      index: this.INDEX,
-      mappings: {
-        properties: {
-          id: { type: 'keyword' },
-          code: { type: 'keyword' },
-          name: {
-            type: 'text',
-            analyzer: 'standard',
-            fields: { keyword: { type: 'keyword' } } // for sorting
-          },
-          slug: { type: 'keyword' },
-          description: { type: 'text', analyzer: 'standard' },
-          status: { type: 'keyword' },
-          basePrice: { type: 'double' },
-          views: { type: 'integer' },
-          brand: {
-            properties: {
-              id: { type: 'keyword' },
-              name: { type: 'text', fields: { keyword: { type: 'keyword' } } }
-            }
-          },
-          countryOfOrigin: {
-            properties: {
-              id: { type: 'keyword' },
-              name: { type: 'text', fields: { keyword: { type: 'keyword' } } }
-            }
-          },
-          categories: {
-            type: 'nested',
-            properties: {
-              id: { type: 'keyword' },
-              name: { type: 'text', fields: { keyword: { type: 'keyword' } } },
-              slug: { type: 'keyword' },
-              isPrimary: { type: 'boolean' }
-            }
-          },
-          // Nested type is CRITICAL for faceted filtering.
-          // A flat array would mix up attributeId + valueId across attributes,
-          // causing incorrect cross-attribute matches.
-          attributes: {
-            type: 'nested',
-            properties: {
-              attributeId: { type: 'keyword' },
-              attributeName: { type: 'keyword' },
-              valueId: { type: 'keyword' },
-              value: { type: 'keyword' }
-            }
-          },
-          minSellingPrice: { type: 'double' },
-          maxSellingPrice: { type: 'double' },
-          createdAt: { type: 'date' },
-          updatedAt: { type: 'date' }
-        }
-      },
-      settings: {
-        number_of_shards: 1,
-        number_of_replicas: 0,
-        analysis: {
-          analyzer: {
-            standard: { type: 'standard' }
-          }
-        }
-      }
-    })
+  //   await this.esService.indices.create({
+  //     index: this.INDEX,
+  //     mappings: {
+  //       properties: {
+  //         id: { type: 'keyword' },
+  //         code: { type: 'keyword' },
+  //         name: {
+  //           type: 'text',
+  //           analyzer: 'standard',
+  //           fields: { keyword: { type: 'keyword' } } // for sorting
+  //         },
+  //         slug: { type: 'keyword' },
+  //         description: { type: 'text', analyzer: 'standard' },
+  //         status: { type: 'keyword' },
+  //         basePrice: { type: 'double' },
+  //         views: { type: 'integer' },
+  //         brand: {
+  //           properties: {
+  //             id: { type: 'keyword' },
+  //             name: { type: 'text', fields: { keyword: { type: 'keyword' } } }
+  //           }
+  //         },
+  //         countryOfOrigin: {
+  //           properties: {
+  //             id: { type: 'keyword' },
+  //             name: { type: 'text', fields: { keyword: { type: 'keyword' } } }
+  //           }
+  //         },
+  //         categories: {
+  //           type: 'nested',
+  //           properties: {
+  //             id: { type: 'keyword' },
+  //             name: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+  //             slug: { type: 'keyword' },
+  //             isPrimary: { type: 'boolean' }
+  //           }
+  //         },
+  //         // Nested type is CRITICAL for faceted filtering.
+  //         // A flat array would mix up attributeId + valueId across attributes,
+  //         // causing incorrect cross-attribute matches.
+  //         attributes: {
+  //           type: 'nested',
+  //           properties: {
+  //             attributeId: { type: 'keyword' },
+  //             attributeName: { type: 'keyword' },
+  //             valueId: { type: 'keyword' },
+  //             value: { type: 'keyword' }
+  //           }
+  //         },
+  //         minSellingPrice: { type: 'double' },
+  //         maxSellingPrice: { type: 'double' },
+  //         createdAt: { type: 'date' },
+  //         updatedAt: { type: 'date' }
+  //       }
+  //     },
+  //     settings: {
+  //       number_of_shards: 1,
+  //       number_of_replicas: 0,
+  //       analysis: {
+  //         analyzer: {
+  //           standard: { type: 'standard' }
+  //         }
+  //       }
+  //     }
+  //   })
 
-    this.logger.log(`Index "${this.INDEX}" created successfully.`)
-  }
+  //   this.logger.log(`Index "${this.INDEX}" created successfully.`)
+  // }
 
-  async indexProduct(doc: ProductDocument) {
-    return this.esService.index({
-      index: this.INDEX,
-      id: doc.id,
-      document: doc
-    })
-  }
+  // async indexProduct(doc: ProductDocument) {
+  //   return this.esService.index({
+  //     index: this.INDEX,
+  //     id: doc.id,
+  //     document: doc
+  //   })
+  // }
 
-  async deleteProduct(productId: string) {
-    return this.esService.delete({ index: this.INDEX, id: productId })
-  }
+  // async deleteProduct(productId: string) {
+  //   return this.esService.delete({ index: this.INDEX, id: productId })
+  // }
 
   async searchProducts(dto: SearchProductsDto): Promise<SearchResult> {
     const {
@@ -288,26 +287,31 @@ export class SearchService implements OnApplicationBootstrap {
       }
     }
 
-    const result = await this.esService.search({
-      index: this.INDEX,
-      from,
-      size,
-      query: {
-        bool: {
-          must: must.length ? must : [{ match_all: {} }],
-          filter: filters
-        }
-      },
-      aggregations: aggs,
-      sort: query?.trim()
-        ? ['_score'] // relevance for keyword search
-        : [{ createdAt: { order: 'desc' } }] // newest first for browsing
-    })
+    // const result = await this.esService.search({
+    //   index: this.INDEX,
+    //   from,
+    //   size,
+    //   query: {
+    //     bool: {
+    //       must: must.length ? must : [{ match_all: {} }],
+    //       filter: filters
+    //     }
+    //   },
+    //   aggregations: aggs,
+    //   sort: query?.trim()
+    //     ? ['_score'] // relevance for keyword search
+    //     : [{ createdAt: { order: 'desc' } }] // newest first for browsing
+    // })
 
+    // return {
+    //   total: (result.hits.total as { value: number }).value,
+    //   products: result.hits.hits.map((h) => h._source as ProductDocument),
+    //   facets: this.formatFacets(result.aggregations)
+    // }
     return {
-      total: (result.hits.total as { value: number }).value,
-      products: result.hits.hits.map((h) => h._source as ProductDocument),
-      facets: this.formatFacets(result.aggregations)
+      total: 0,
+      products: [],
+      facets: this.formatFacets(undefined)
     }
   }
 

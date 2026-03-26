@@ -75,7 +75,7 @@ export class ProductQueryDto extends PaginationQueryDto {
   @MaxLength(255, { message: 'Search query must be at most 255 characters' })
   @IsString({ message: 'Search query must be a string' })
   @IsOptional()
-  search?: string
+  searchQuery?: string
 
   // Status filter
   @ApiPropertyOptional({
