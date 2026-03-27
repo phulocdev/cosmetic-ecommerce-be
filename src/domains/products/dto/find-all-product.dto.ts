@@ -12,7 +12,8 @@ import {
   IsString,
   IsUUID,
   MaxLength,
-  Min
+  Min,
+  ValidateNested
 } from 'class-validator'
 import {
   CursorPaginatedResponseDto,
@@ -20,6 +21,27 @@ import {
   PaginationQueryDto
 } from 'core/dto/pagination.dto'
 import { ProductSortBy, ProductStatus } from 'enums'
+
+
+
+/**
+ * Attribute filter for faceted search
+ */
+export class AttributeFilterDto {
+  @ApiPropertyOptional({ example: 'attr-1', description: 'Attribute ID' })
+  @IsUUID('4', { message: 'Attribute ID must be a valid UUIDv4' })
+  attributeId: string
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['val-1', 'val-2'],
+    description: 'Value IDs for the attribute'
+  })
+  @IsArray({ message: 'Value IDs must be an array' })
+  @IsUUID('4', { each: true, message: 'Each value ID must be a valid UUIDv4' })
+  valueIds: string[]
+}
+
 
 /**
  * Request DTOs
@@ -90,11 +112,7 @@ export class ProductQueryDto extends PaginationQueryDto {
     each: true,
     message: `Each status must be a valid ProductStatus: ${Object.values(ProductStatus).join(', ')}`
   })
-  @Transform(({ value }) => {
-    if (Array.isArray(value)) return value
-    if (typeof value === 'string') return value.split(',')
-    return value
-  })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
   @IsOptional()
   status?: ProductStatus[]
 
@@ -172,14 +190,25 @@ export class ProductQueryDto extends PaginationQueryDto {
   maxPrice?: number
 
   // Attribute filters (dynamic)
-  @ApiPropertyOptional({
-    type: 'object',
-    example: { color: 'red,blue', size: 'large' },
-    additionalProperties: { type: 'string' }
-  })
-  @IsOptional()
-  @IsObject({ message: 'Attributes must be an object' })
-  attributes?: Record<string, string>
+  // @ApiPropertyOptional({
+  //   type: 'object',
+  //   example: { color: 'red,blue', size: 'large' },
+  //   additionalProperties: { type: 'string' }
+  // })
+  // @IsOptional()
+  // @IsObject({ message: 'Attributes must be an object' })
+  // attributes?: Record<string, string>
+
+   @ApiPropertyOptional({
+      type: [AttributeFilterDto],
+      description: 'Faceted attribute filtering',
+      example: [{ attributeId: 'color-id', valueIds: ['red-id', 'blue-id'] }]
+    })
+    @IsArray({ message: 'Attribute filters must be an array' })
+    @ValidateNested({ each: true })
+    @Type(() => AttributeFilterDto)
+    @IsOptional()
+    attributes?: AttributeFilterDto[]
 
   // Variant-specific filters
   @ApiPropertyOptional({
@@ -248,14 +277,14 @@ export class ProductQueryDto extends PaginationQueryDto {
   })
   @IsString({ message: 'SKU must be a string' })
   @IsOptional()
-  sku?: string
+  sku?: string // Sku
 
   // Sorting
   @ApiPropertyOptional({
     enum: ProductSortBy,
     enumName: 'ProductSortBy',
-    example: ProductSortBy.CREATED_AT,
-    default: ProductSortBy.CREATED_AT
+    example: ProductSortBy.PRICE,
+    description: 'Field to sort by'
   })
   @IsEnum(ProductSortBy, {
     message: `Sort by must be a valid ProductSortBy: ${Object.values(ProductSortBy).join(', ')}`
@@ -263,56 +292,56 @@ export class ProductQueryDto extends PaginationQueryDto {
   @IsOptional()
   sortBy?: ProductSortBy = ProductSortBy.CREATED_AT
 
-  // Include relations
-  @ApiPropertyOptional({
-    example: true,
-    description: 'Include product images',
-    default: false
-  })
-  @IsBoolean({ message: 'Include images must be a boolean' })
-  @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  includeImages?: boolean = true
+  // // Include relations
+  // @ApiPropertyOptional({
+  //   example: true,
+  //   description: 'Include product images',
+  //   default: false
+  // })
+  // @IsBoolean({ message: 'Include images must be a boolean' })
+  // @IsOptional()
+  // @Transform(({ value }) => value === 'true' || value === true)
+  // includeImages?: boolean = true
 
-  @ApiPropertyOptional({
-    example: true,
-    description: 'Include product variants',
-    default: false
-  })
-  @IsBoolean({ message: 'Include variants must be a boolean' })
-  @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  includeVariants?: boolean
+  // @ApiPropertyOptional({
+  //   example: true,
+  //   description: 'Include product variants',
+  //   default: false
+  // })
+  // @IsBoolean({ message: 'Include variants must be a boolean' })
+  // @IsOptional()
+  // @Transform(({ value }) => value === 'true' || value === true)
+  // includeVariants?: boolean
 
-  @ApiPropertyOptional({
-    example: true,
-    description: 'Include product attributes',
-    default: false
-  })
-  @IsBoolean({ message: 'Include attributes must be a boolean' })
-  @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  includeAttributes?: boolean
+  // @ApiPropertyOptional({
+  //   example: true,
+  //   description: 'Include product attributes',
+  //   default: false
+  // })
+  // @IsBoolean({ message: 'Include attributes must be a boolean' })
+  // @IsOptional()
+  // @Transform(({ value }) => value === 'true' || value === true)
+  // includeAttributes?: boolean
 
-  @ApiPropertyOptional({
-    example: true,
-    description: 'Include brand and country information',
-    default: true
-  })
-  @IsBoolean({ message: 'Include brand and country must be a boolean' })
-  @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  includeBrandAndCountry?: boolean = true
+  // @ApiPropertyOptional({
+  //   example: true,
+  //   description: 'Include brand and country information',
+  //   default: true
+  // })
+  // @IsBoolean({ message: 'Include brand and country must be a boolean' })
+  // @IsOptional()
+  // @Transform(({ value }) => value === 'true' || value === true)
+  // includeBrandAndCountry?: boolean = true
 
-  @ApiPropertyOptional({
-    example: true,
-    description: 'Include category information',
-    default: true
-  })
-  @IsBoolean({ message: 'Include categories must be a boolean' })
-  @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
-  includeCategories?: boolean = true
+  // @ApiPropertyOptional({
+  //   example: true,
+  //   description: 'Include category information',
+  //   default: true
+  // })
+  // @IsBoolean({ message: 'Include categories must be a boolean' })
+  // @IsOptional()
+  // @Transform(({ value }) => value === 'true' || value === true)
+  // includeCategories?: boolean = true
 }
 
 /**

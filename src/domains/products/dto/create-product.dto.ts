@@ -307,7 +307,7 @@ export class CreateProductDto {
   })
   @ValidateNested({ each: true })
   @Type(() => CreateProductVariantDto)
-  @ArrayMinSize(1, { message: 'At least one variant is required' })
+  // @ArrayMinSize(1, { message: 'At least one variant is required' })
   @IsArray({ message: 'Variants must be an array' })
   @IsOptional()
   variants: CreateProductVariantDto[]

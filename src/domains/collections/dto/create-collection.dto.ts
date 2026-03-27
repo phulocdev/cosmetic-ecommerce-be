@@ -17,7 +17,7 @@ import {
 
 // ─── Nested DTOs ─────────────────────────────────────────────────────────────
 
-export class CollectionProductItemDto {
+export class PartialProductDto {
   @ApiProperty({ description: 'Product UUID' })
   @IsUUID('4', { message: 'Product ID must be a valid UUID' })
   @IsNotEmpty({ message: 'Product ID is required' })
@@ -99,26 +99,26 @@ export class CreateCollectionDto {
   metaDescription?: string
 
   // Manually assigned products
-  @ApiPropertyOptional({ type: [CollectionProductItemDto] })
+  @ApiPropertyOptional({ type: [PartialProductDto] })
   @IsOptional()
   @IsArray({ message: 'Products must be an array' })
   @ValidateNested({ each: true })
-  @Type(() => CollectionProductItemDto)
-  products?: CollectionProductItemDto[]
+  @Type(() => PartialProductDto)
+  products?: PartialProductDto[]
 
-  // Attributes to show in the filter panel
-  @ApiPropertyOptional({ type: [CollectionAttributeItemDto] })
-  @IsOptional()
-  @IsArray({ message: 'Attributes must be an array' })
-  @ValidateNested({ each: true })
-  @Type(() => CollectionAttributeItemDto)
-  attributes?: CollectionAttributeItemDto[]
+  // // Attributes to show in the filter panel
+  // @ApiPropertyOptional({ type: [CollectionAttributeItemDto] })
+  // @IsOptional()
+  // @IsArray({ message: 'Attributes must be an array' })
+  // @ValidateNested({ each: true })
+  // @Type(() => CollectionAttributeItemDto)
+  // attributes?: CollectionAttributeItemDto[]
 
-  // Categories to show in the filter panel
-  @ApiPropertyOptional({ type: [CollectionCategoryItemDto] })
-  @IsOptional()
-  @IsArray({ message: 'Categories must be an array' })
-  @ValidateNested({ each: true })
-  @Type(() => CollectionCategoryItemDto)
-  categories?: CollectionCategoryItemDto[]
+  // // Categories to show in the filter panel
+  // @ApiPropertyOptional({ type: [CollectionCategoryItemDto] })
+  // @IsOptional()
+  // @IsArray({ message: 'Categories must be an array' })
+  // @ValidateNested({ each: true })
+  // @Type(() => CollectionCategoryItemDto)
+  // categories?: CollectionCategoryItemDto[]
 }

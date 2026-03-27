@@ -97,10 +97,6 @@ export class CollectionAttribute {
 
   @Expose()
   @ApiProperty()
-  displayOrder: number
-
-  @Expose()
-  @ApiProperty()
   createdAt: Date
 
   @Expose()

@@ -97,6 +97,13 @@ export class CategoryCursorData {
   depth?: number
 }
 
+export class CollectionCursorData {
+  id: string
+  createdAt?: Date
+  title?: string
+  slug?: string
+}
+
 export interface TransactionManager {
   runInTransaction<T>(work: () => Promise<T>): Promise<T>
 }

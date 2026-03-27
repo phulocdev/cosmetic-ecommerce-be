@@ -326,19 +326,17 @@ export class FindAllProductService {
       })
     }
 
-    // Attribute filters (dynamic)
-    if (query.attributes && Object.keys(query.attributes).length > 0) {
-      for (const [attributeSlug, values] of Object.entries(query.attributes)) {
-        const valueArray = values.split(',').map((v) => v.trim())
-
+    // Attribute filters (faceted - by attribute ID and value IDs)
+    if (query.attributes && query.attributes.length > 0) {
+      for (const attrFilter of query.attributes) {
         ;(where.AND as any[]).push({
-          attributes: {
+          variants: {
             some: {
-              attribute: {
-                slug: attributeSlug,
-                values: {
-                  some: {
-                    value: { in: valueArray, mode: 'insensitive' }
+              attributeValues: {
+                some: {
+                  attributeValue: {
+                    attributeId: attrFilter.attributeId,
+                    id: { in: attrFilter.valueIds }
                   }
                 }
               }
@@ -510,48 +508,57 @@ export class FindAllProductService {
   private buildIncludeClause(query: ProductQueryDto): Prisma.ProductInclude {
     const include: Prisma.ProductInclude = {}
 
-    if (query.includeBrandAndCountry) {
-      include.brand = true
-      include.countryOfOrigin = true
-    }
+    // if (query.includeBrandAndCountry) {
+    //   include.brand = true
+    //   include.countryOfOrigin = true
+    // }
 
-    if (query.includeCategories) {
-      include.categories = {
-        include: {
-          category: true
-        }
-      }
-    }
-
-    if (query.includeImages) {
-      include.images = true
-    }
-
-    // if (query.includeAttributes) {
-    //   include.attributes = {
+    // if (query.includeCategories) {
+    //   include.categories = {
     //     include: {
-    //       attribute: {
+    //       category: true
+    //     }
+    //   }
+    // }
+
+    // if (query.includeImages) {
+    //   include.images = true
+    // }
+
+    // if (query.includeVariants) {
+    //   include.variants = {
+    //     include: {
+    //       attributeValues: {
     //         include: {
-    //           values: true
+    //           attributeValue: {
+    //             include: {
+    //               attribute: true
+    //             }
+    //           }
     //         }
     //       }
     //     }
     //   }
     // }
 
-    if (query.includeVariants) {
-      include.variants = {
-        include: {
-          attributeValues: {
-            include: {
-              attributeValue: {
-                include: {
-                  attribute: true
-                }
+    include.brand = true
+    include.countryOfOrigin = true
+    include.categories = {
+      include: {
+        category: true
+      }
+    }
+    include.images = true
+    include.variants = {
+      include: {
+        attributeValues: {
+          include: {
+            attributeValue: {
+              include: {
+                attribute: true
               }
             }
           }
-          // images: true
         }
       }
     }

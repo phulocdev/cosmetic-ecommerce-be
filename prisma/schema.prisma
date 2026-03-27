@@ -801,7 +801,7 @@ model CollectionProduct {
 model CollectionAttribute {
   collectionId String
   attributeId  String
-  displayOrder Int        @default(0) // controls filter panel ordering
+  // displayOrder Int        @default(0) // controls filter panel ordering
 
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   attribute    Attribute  @relation(fields: [attributeId], references: [id], onDelete: Cascade)

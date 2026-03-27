@@ -14,7 +14,7 @@ import {
   Query
 } from '@nestjs/common'
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger'
-import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto } from 'core'
+import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto, Public } from 'core'
 import { ResponseMessage } from 'core/decorators/response-message.decorator'
 import { DateRangePipe, ParsedDateRange } from 'core/pipes/date-range.pipe'
 import {
@@ -93,6 +93,7 @@ export class CategoriesController {
   // }
 
   @Get()
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get paginated list of categories with filters' })
   @ApiResponse({

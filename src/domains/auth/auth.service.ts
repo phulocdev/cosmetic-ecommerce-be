@@ -175,7 +175,7 @@ export class AuthService {
     //   maxAge: +ms(this.configService.get('JWT_REFRESH_EXPIRATION')) // in milliseconds
     // })
 
-    // res.cookie('accessToken', accessToken, {
+    // res.cookie(JSON_WEB_TOKEN_KEYS.ACCESS_TOKEN, accessToken, {
     //   httpOnly: true,
     //   secure: false, // true in production (HTTPS)
     //   sameSite: 'lax',
