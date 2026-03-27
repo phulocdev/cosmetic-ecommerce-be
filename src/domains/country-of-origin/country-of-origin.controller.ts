@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common'
-import { OffsetPaginatedResponseDto, ParseUUIDPipe } from 'core'
+import { OffsetPaginatedResponseDto, ParseUUIDPipe, Public } from 'core'
 import { CountryOfOrigin } from 'domains/country-of-origin/entities/country-of-origin.entity'
 import { CountryOfOriginService } from './country-of-origin.service'
 import { CreateCountryOfOriginDto } from './dto/create-country-of-origin.dto'
@@ -16,6 +16,7 @@ export class CountryOfOriginController {
   }
 
   @Get()
+  @Public()
   findAll(
     @Query() query: FindAllCountryOfOriginDto
   ): Promise<OffsetPaginatedResponseDto<CountryOfOrigin>> {

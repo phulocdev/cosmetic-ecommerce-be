@@ -30,6 +30,13 @@ export enum CategorySortBy {
   DEPTH = 'depth'
 }
 
+export enum CollectionSortBy {
+  TITLE = 'title',
+  SLUG = 'slug',
+  CREATED_AT = 'createdAt',
+  PRODUCT_COUNT = 'productCount'
+}
+
 export enum PaginationType {
   OFFSET = 'offset',
   CURSOR = 'cursor'

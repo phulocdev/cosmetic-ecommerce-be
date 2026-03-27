@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common'
-import { OffsetPaginatedResponseDto, ParseUUIDPipe } from 'core'
+import { OffsetPaginatedResponseDto, ParseUUIDPipe, Public } from 'core'
 import { Brand } from 'domains/brands/entities/brand.entity'
 import { BrandsService } from './brands.service'
 import { CreateBrandDto } from './dto/create-brand.dto'
@@ -15,6 +15,7 @@ export class BrandsController {
     return this.brandsService.create(createBrandDto)
   }
 
+  @Public()
   @Get()
   findAll(@Query() query: FindAllBrandDto): Promise<OffsetPaginatedResponseDto<Brand>> {
     return this.brandsService.findAll(query)

@@ -54,13 +54,6 @@ export class PaginationQueryDto {
   limit?: number = 10
 
   @ApiPropertyOptional({
-    description: 'Field to sort by'
-  })
-  @IsOptional()
-  @IsString()
-  sortBy?: string = 'createdAt'
-
-  @ApiPropertyOptional({
     description: 'Sort order',
     enum: SortOrder,
     default: SortOrder.DESC
