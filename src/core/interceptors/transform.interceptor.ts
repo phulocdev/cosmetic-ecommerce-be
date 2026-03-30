@@ -1,4 +1,5 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config/dist/config.service'
 import { Reflector } from '@nestjs/core'
 import { SKIP_TRANSFORM_KEY } from 'core/decorators'
 import { RESPONSE_MESSAGE_KEY } from 'core/decorators/response-message.decorator'
@@ -7,7 +8,10 @@ import { ApiResponse } from 'types/common.type'
 
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private readonly configService: ConfigService
+  ) {}
 
   async intercept(
     context: ExecutionContext,
@@ -30,7 +34,9 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
 
     const { statusCode } = context.switchToHttp().getResponse()
 
-    await new Promise((resolve) => setTimeout(resolve, 3000)) // Simulate delay for testing loading states
+    if (this.configService.get('NODE_ENV') === 'development') {
+      await new Promise((resolve) => setTimeout(resolve, 3000)) // Simulate delay for testing loading states
+    }
 
     return next.handle().pipe(
       map((data) => {
