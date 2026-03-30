@@ -1,20 +1,18 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
-import { Prisma, Product } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
 import { CreateProductDto } from 'domains/products/dto'
-import {
-  CursorPaginatedProductListResponse,
-  OffsetPaginatedProductListResponse,
-  ProductQueryDto
-} from 'domains/products/dto/find-all-product.dto'
+import { ProductQueryDto } from 'domains/products/dto/find-all-product.dto'
 import { UpdateProductDto } from 'domains/products/dto/update-product.dto'
 import { FindAllProductService } from 'domains/products/find-all-product.service'
+import { SearchService } from 'domains/search/search.service'
 import { UpdateProductService } from 'domains/products/update-product.service'
 import { ValidateDtoService } from 'domains/products/validate-dto.service'
-import { ProductDocument, SearchService } from 'domains/search/search.service'
 import { PaginationType } from 'enums'
 import { UtcDateRange } from 'utils'
 import { generateProductCode, generateVariantSku, slugifyString } from 'utils'
+import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto } from 'core'
+import { Product } from 'domains/products/entities'
 
 @Injectable()
 export class ProductsService {
@@ -148,77 +146,17 @@ export class ProductsService {
       return createdProduct
     })
 
-    // Fetch full product with all relations needed for ES indexing
     const fullProduct = await this.findById(product.id)
 
-    // Index to Elasticsearch AFTER the transaction is committed
-    // Non-blocking: log errors but don't fail the API response - Fire-and-forget indexing
-    this.indexProductToEs(fullProduct).catch((err) =>
-      this.logger.error(`Failed to index product ${product.id} to ES`, err)
-    )
+    // Sync to ElasticSearch (fire-and-forget, don't break write path)
+    try {
+      const document = this.searchService.transformToDocument(fullProduct as unknown as Product)
+      await this.searchService.indexProduct(document)
+    } catch (error) {
+      this.logger.warn(`Failed to sync product ${product.id} to ES after create: ${error}`)
+    }
 
     return fullProduct
-  }
-
-  // Build and index the ES document from the Prisma product shape
-  private async indexProductToEs(product: any) {
-    // Collect all unique attribute values across all variants
-    const attributes: ProductDocument['attributes'] = []
-    const seen = new Set<string>()
-
-    for (const variant of product.variants ?? []) {
-      for (const vav of variant.attributeValues ?? []) {
-        const key = `${vav.attributeValue.attributeId}__${vav.attributeValueId}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        attributes.push({
-          attributeId: vav.attributeValue.attributeId,
-          attributeName: vav.attributeValue.attribute.name,
-          valueId: vav.attributeValueId,
-          value: vav.attributeValue.value
-        })
-      }
-    }
-
-    const sellingPrices = (product.variants ?? [])
-      .filter((v: any) => v.isActive)
-      .map((v: any) => Number(v.sellingPrice))
-
-    const doc: ProductDocument = {
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      slug: product.slug,
-      description: product.description ?? '',
-      status: product.status,
-      basePrice: Number(product.basePrice),
-      views: product.views ?? 0,
-      brand: {
-        id: product.brand.id,
-        name: product.brand.name
-      },
-      countryOfOrigin: {
-        id: product.countryOfOrigin.id,
-        name: product.countryOfOrigin.name
-      },
-      categories: (product.categories ?? []).map((pc: any) => ({
-        id: pc.category.id,
-        name: pc.category.name,
-        slug: pc.category.slug,
-        isPrimary: pc.isPrimary
-      })),
-      attributes,
-      minSellingPrice: sellingPrices.length
-        ? Math.min(...sellingPrices)
-        : Number(product.basePrice),
-      maxSellingPrice: sellingPrices.length
-        ? Math.max(...sellingPrices)
-        : Number(product.basePrice),
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt
-    }
-
-    // await this.searchService.indexProduct(doc)
   }
 
   /**
@@ -340,7 +278,7 @@ export class ProductsService {
         updateData.description = updateProductDto.description
       if (updateProductDto.status !== undefined) updateData.status = updateProductDto.status
       if (updateProductDto.basePrice !== undefined) {
-        updateData.basePrice = new Prisma.Decimal(updateProductDto.basePrice)
+        updateData.basePrice = new Prisma.Decimal(updateProductDto.basePrice) as unknown as number
       }
       if (updateProductDto.brandId !== undefined) updateData.brandId = updateProductDto.brandId
       if (updateProductDto.countryOriginId !== undefined) {
@@ -352,7 +290,7 @@ export class ProductsService {
       if (Object.keys(updateData).length > 0) {
         await tx.product.update({
           where: { id },
-          data: updateData
+          data: updateData as Prisma.ProductUpdateInput
         })
       }
 
@@ -381,7 +319,18 @@ export class ProductsService {
         )
       }
     })
-    return this.findById(id)
+
+    const fullProduct = await this.findById(id)
+
+    // Sync to ElasticSearch (fire-and-forget, don't break write path)
+    try {
+      const document = this.searchService.transformToDocument(fullProduct as unknown as Product)
+      await this.searchService.indexProduct(document)
+    } catch (error) {
+      this.logger.warn(`Failed to sync product ${id} to ES after update: ${error}`)
+    }
+
+    return fullProduct
   }
 
   /**
@@ -390,7 +339,7 @@ export class ProductsService {
   async findAll(
     query: ProductQueryDto,
     utcDateRange?: UtcDateRange
-  ): Promise<OffsetPaginatedProductListResponse | CursorPaginatedProductListResponse> {
+  ): Promise<OffsetPaginatedResponseDto<Product> | CursorPaginatedResponseDto<Product>> {
     // Determine pagination type
     const paginationType = query.paginationType || PaginationType.OFFSET
 

@@ -13,4 +13,10 @@ export class FindAllAttributeDto extends PaginationQueryDto {
   @IsUUID('4', { message: 'Category ID must be a valid UUID' })
   @IsOptional()
   categoryId?: string
+
+  @ApiPropertyOptional({ example: true, description: 'Filter by global filter status' })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isGlobalFilter?: boolean
 }

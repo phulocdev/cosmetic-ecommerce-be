@@ -617,7 +617,7 @@ model Attribute {
 
   // Filter-specific fields
   isGlobalFilter  Boolean @default(false) // Show on /collections/all? - True = available across all categories
-  displayName     String? // Override name in filter UI: "Color" → "Shirt Color"
+  // displayName     String? // Override name in filter UI: "Color" → "Shirt Color"
   // unit            String? // "cm", "kg", "GB" for range filters
 
   values      AttributeValue[]

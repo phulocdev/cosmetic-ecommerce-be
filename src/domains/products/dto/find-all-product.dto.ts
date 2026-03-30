@@ -1,5 +1,4 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { Product } from '@prisma/client'
 import { Transform, Type } from 'class-transformer'
 import {
   IsArray,
@@ -7,7 +6,6 @@ import {
   IsEnum,
   IsInt,
   IsNumber,
-  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -15,14 +13,8 @@ import {
   Min,
   ValidateNested
 } from 'class-validator'
-import {
-  CursorPaginatedResponseDto,
-  OffsetPaginatedResponseDto,
-  PaginationQueryDto
-} from 'core/dto/pagination.dto'
+import { PaginationQueryDto } from 'core/dto/pagination.dto'
 import { ProductSortBy, ProductStatus } from 'enums'
-
-
 
 /**
  * Attribute filter for faceted search
@@ -41,7 +33,6 @@ export class AttributeFilterDto {
   @IsUUID('4', { each: true, message: 'Each value ID must be a valid UUIDv4' })
   valueIds: string[]
 }
-
 
 /**
  * Request DTOs
@@ -136,14 +127,6 @@ export class ProductQueryDto extends PaginationQueryDto {
   @IsOptional()
   categorySlug?: string
 
-  @ApiPropertyOptional({
-    example: '/clothing/tshirts/',
-    description: 'Filter by category path (includes subcategories)'
-  })
-  @IsString({ message: 'Category path must be a string' })
-  @IsOptional()
-  categoryPath?: string
-
   // Brand filter
   @ApiPropertyOptional({
     type: [String],
@@ -189,26 +172,16 @@ export class ProductQueryDto extends PaginationQueryDto {
   @Type(() => Number)
   maxPrice?: number
 
-  // Attribute filters (dynamic)
-  // @ApiPropertyOptional({
-  //   type: 'object',
-  //   example: { color: 'red,blue', size: 'large' },
-  //   additionalProperties: { type: 'string' }
-  // })
-  // @IsOptional()
-  // @IsObject({ message: 'Attributes must be an object' })
-  // attributes?: Record<string, string>
-
-   @ApiPropertyOptional({
-      type: [AttributeFilterDto],
-      description: 'Faceted attribute filtering',
-      example: [{ attributeId: 'color-id', valueIds: ['red-id', 'blue-id'] }]
-    })
-    @IsArray({ message: 'Attribute filters must be an array' })
-    @ValidateNested({ each: true })
-    @Type(() => AttributeFilterDto)
-    @IsOptional()
-    attributes?: AttributeFilterDto[]
+  @ApiPropertyOptional({
+    type: [AttributeFilterDto],
+    description: 'Faceted attribute filtering',
+    example: [{ attributeId: 'color-id', valueIds: ['red-id', 'blue-id'] }]
+  })
+  @IsArray({ message: 'Attribute filters must be an array' })
+  @ValidateNested({ each: true })
+  @Type(() => AttributeFilterDto)
+  @IsOptional()
+  attributes?: AttributeFilterDto[]
 
   // Variant-specific filters
   @ApiPropertyOptional({
@@ -291,120 +264,4 @@ export class ProductQueryDto extends PaginationQueryDto {
   })
   @IsOptional()
   sortBy?: ProductSortBy = ProductSortBy.CREATED_AT
-
-  // // Include relations
-  // @ApiPropertyOptional({
-  //   example: true,
-  //   description: 'Include product images',
-  //   default: false
-  // })
-  // @IsBoolean({ message: 'Include images must be a boolean' })
-  // @IsOptional()
-  // @Transform(({ value }) => value === 'true' || value === true)
-  // includeImages?: boolean = true
-
-  // @ApiPropertyOptional({
-  //   example: true,
-  //   description: 'Include product variants',
-  //   default: false
-  // })
-  // @IsBoolean({ message: 'Include variants must be a boolean' })
-  // @IsOptional()
-  // @Transform(({ value }) => value === 'true' || value === true)
-  // includeVariants?: boolean
-
-  // @ApiPropertyOptional({
-  //   example: true,
-  //   description: 'Include product attributes',
-  //   default: false
-  // })
-  // @IsBoolean({ message: 'Include attributes must be a boolean' })
-  // @IsOptional()
-  // @Transform(({ value }) => value === 'true' || value === true)
-  // includeAttributes?: boolean
-
-  // @ApiPropertyOptional({
-  //   example: true,
-  //   description: 'Include brand and country information',
-  //   default: true
-  // })
-  // @IsBoolean({ message: 'Include brand and country must be a boolean' })
-  // @IsOptional()
-  // @Transform(({ value }) => value === 'true' || value === true)
-  // includeBrandAndCountry?: boolean = true
-
-  // @ApiPropertyOptional({
-  //   example: true,
-  //   description: 'Include category information',
-  //   default: true
-  // })
-  // @IsBoolean({ message: 'Include categories must be a boolean' })
-  // @IsOptional()
-  // @Transform(({ value }) => value === 'true' || value === true)
-  // includeCategories?: boolean = true
-}
-
-/**
- * Response DTOs
- */
-
-export class ProductFiltersAppliedDto {
-  @ApiPropertyOptional({
-    description: 'Applied filters',
-    type: 'object',
-    example: { status: 'PUBLISHED', brandIds: ['brand-1', 'brand-2'] },
-    additionalProperties: { type: 'string' }
-  })
-  applied: Record<string, any>
-
-  @ApiPropertyOptional({
-    description: 'Available filters with counts',
-    type: 'object',
-    example: { status: { PUBLISHED: 120, DRAFT: 30 }, brandIds: { 'brand-1': 80, 'brand-2': 70 } },
-    additionalProperties: { type: 'object' }
-  })
-  available?: Record<string, any>
-}
-
-export class OffsetPaginatedProductListResponse extends OffsetPaginatedResponseDto<Product> {
-  filters?: ProductFiltersAppliedDto
-
-  constructor({
-    items,
-    total,
-    page,
-    limit,
-    filters
-  }: {
-    items: Product[]
-    total: number
-    page: number
-    limit: number
-    filters?: ProductFiltersAppliedDto
-  }) {
-    super({ items, total, page, limit })
-    this.filters = filters
-  }
-}
-
-export class CursorPaginatedProductListResponse extends CursorPaginatedResponseDto<Product> {
-  filters?: ProductFiltersAppliedDto
-  constructor({
-    items,
-    nextCursor,
-    previousCursor,
-    hasNextPage,
-    hasPreviousPage,
-    filters
-  }: {
-    items: Product[]
-    nextCursor: string | null
-    previousCursor: string | null
-    hasNextPage: boolean
-    hasPreviousPage: boolean
-    filters?: ProductFiltersAppliedDto
-  }) {
-    super({ items, nextCursor, previousCursor, hasNextPage, hasPreviousPage })
-    this.filters = filters
-  }
 }

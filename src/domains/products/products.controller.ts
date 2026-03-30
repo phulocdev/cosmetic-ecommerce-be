@@ -11,17 +11,19 @@ import {
   Query
 } from '@nestjs/common'
 import { ApiBody, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger'
-import { ParseUUIDPipe, ResponseMessage } from 'core'
+import {
+  CursorPaginatedResponseDto,
+  OffsetPaginatedResponseDto,
+  ParseUUIDPipe,
+  ResponseMessage
+} from 'core'
 import { Public } from 'core/decorators/public.decorator'
 import { DateRangePipe, ParsedDateRange } from 'core/pipes/date-range.pipe'
-import {
-  CursorPaginatedProductListResponse,
-  OffsetPaginatedProductListResponse,
-  ProductQueryDto
-} from 'domains/products/dto/find-all-product.dto'
+import { ProductQueryDto } from 'domains/products/dto/find-all-product.dto'
 import { ProductsService } from 'domains/products/products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
+import { Product } from 'domains/products/entities'
 
 @Controller('products')
 export class ProductsController {
@@ -154,7 +156,7 @@ export class ProductsController {
   findAll(
     @Query() query: ProductQueryDto,
     @Query(DateRangePipe) { dateRange }: ParsedDateRange
-  ): Promise<OffsetPaginatedProductListResponse | CursorPaginatedProductListResponse> {
+  ): Promise<OffsetPaginatedResponseDto<Product> | CursorPaginatedResponseDto<Product>> {
     return this.productsService.findAll(query, dateRange)
   }
 

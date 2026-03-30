@@ -2,133 +2,201 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform, Type } from 'class-transformer'
 import {
   IsArray,
+  IsBoolean,
+  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
   ValidateNested
 } from 'class-validator'
+import { AttributeFilterDto } from 'domains/products'
+import { ProductSortBy, ProductStatus, SortOrder } from 'enums'
 
 /**
  * Attribute filter for faceted search
  */
-export class AttributeFilterDto {
-  @ApiPropertyOptional({ example: 'attr-1', description: 'Attribute ID' })
-  @IsUUID('4', { message: 'Attribute ID must be a valid UUIDv4' })
-  attributeId: string
+export class SearchAttributeFilterDto extends AttributeFilterDto {}
 
-  @ApiPropertyOptional({
-    type: [String],
-    example: ['val-1', 'val-2'],
-    description: 'Value IDs for the attribute'
-  })
-  @IsArray({ message: 'Value IDs must be an array' })
-  @IsUUID('4', { each: true, message: 'Each value ID must be a valid UUIDv4' })
-  valueIds: string[]
-}
-
+/**
+ * Unified search DTO for the `GET /search/products` endpoint.
+ *
+ * Supports both:
+ * - **AdvancedSearchBar** — keyword search with `q` + small `limit`
+ * - **Collection Page** — full filtering, sorting, cursor pagination, and facets
+ */
 export class SearchProductsDto {
+  // ─── Text search ──────────────────────────────────────────────────────
   @ApiPropertyOptional({
-    example: 'cotton shirt',
-    description: 'Natural language search term'
+    example: 'kem chống nắng',
+    description: 'Full-text search query. When provided, results are ranked by relevance.'
   })
   @MaxLength(255, { message: 'Search query must be at most 255 characters' })
   @IsString({ message: 'Search query must be a string' })
   @IsOptional()
-  query?: string
+  searchQuery?: string
+
+  // Product IDs filter (used for Collection Page to limit search within a specific set of products)
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Filter by product IDs (OR logic)'
+  })
+  @IsArray({ message: 'Product IDs must be an array' })
+  @IsUUID('4', { each: true, message: 'Each product ID must be a valid UUIDv4' })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsOptional()
+  productIds?: string[]
+
+  // ─── Filters ──────────────────────────────────────────────────────────
+  @ApiPropertyOptional({
+    type: [String],
+    enum: ProductStatus,
+    description: 'Filter by product statuses (OR logic)'
+  })
+  @IsArray({ message: 'Status must be an array' })
+  @IsEnum(ProductStatus, { each: true, message: 'Each status must be a valid ProductStatus' })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsOptional()
+  status?: ProductStatus[]
 
   @ApiPropertyOptional({
     type: [String],
-    description: 'Filter by category IDs (OR logic)',
-    example: ['cat-1', 'cat-2']
+    description: 'Filter by category IDs (OR logic)'
   })
   @IsArray({ message: 'Category IDs must be an array' })
   @IsUUID('4', { each: true, message: 'Each category ID must be a valid UUIDv4' })
-  @IsOptional()
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsOptional()
   categoryIds?: string[]
+
+  @ApiPropertyOptional({ description: 'Filter by category slug' })
+  @IsString()
+  @IsOptional()
+  categorySlug?: string
+
+  @ApiPropertyOptional({ description: 'Filter by category path (startsWith match)' })
+  @IsString()
+  @IsOptional()
+  categoryPath?: string
 
   @ApiPropertyOptional({
     type: [String],
-    description: 'Filter by brand IDs (OR logic)',
-    example: ['brand-1', 'brand-2']
+    description: 'Filter by brand IDs (OR logic)'
   })
   @IsArray({ message: 'Brand IDs must be an array' })
   @IsUUID('4', { each: true, message: 'Each brand ID must be a valid UUIDv4' })
-  @IsOptional()
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @IsOptional()
   brandIds?: string[]
 
   @ApiPropertyOptional({
     type: [String],
-    description: 'Filter by country of origin IDs (OR logic)',
-    example: ['country-1', 'country-2']
+    description: 'Filter by country of origin IDs (OR logic)'
   })
   @IsArray({ message: 'Country IDs must be an array' })
   @IsUUID('4', { each: true, message: 'Each country ID must be a valid UUIDv4' })
-  @IsOptional()
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
-  countryOriginIds?: string[]
+  @IsOptional()
+  countryIds?: string[]
+
+  @ApiPropertyOptional({ example: 50000, description: 'Minimum base price' })
+  @IsNumber({}, { message: 'Minimum price must be a number' })
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  minPrice?: number
+
+  @ApiPropertyOptional({ example: 500000, description: 'Maximum base price' })
+  @IsNumber({}, { message: 'Maximum price must be a number' })
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  maxPrice?: number
 
   @ApiPropertyOptional({
-    type: [AttributeFilterDto],
-    description: 'Faceted attribute filtering',
-    example: [{ attributeId: 'color-id', valueIds: ['red-id', 'blue-id'] }]
+    type: [SearchAttributeFilterDto],
+    description: 'Attribute filters for faceted search'
   })
   @IsArray({ message: 'Attribute filters must be an array' })
   @ValidateNested({ each: true })
-  @Type(() => AttributeFilterDto)
+  @Type(() => SearchAttributeFilterDto)
   @IsOptional()
-  attributeFilters?: AttributeFilterDto[]
+  attributes?: SearchAttributeFilterDto[]
+
+  @ApiPropertyOptional({ description: 'Only show products with in-stock variants' })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  @IsOptional()
+  inStock?: boolean
+
+  @ApiPropertyOptional({ description: 'Only show products with active variants' })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  @IsOptional()
+  hasActiveVariants?: boolean
+
+  // ─── Sorting ──────────────────────────────────────────────────────────
+  @ApiPropertyOptional({
+    enum: ProductSortBy,
+    description: 'Field to sort by. Ignored when `q` is provided (uses relevance instead).'
+  })
+  @IsEnum(ProductSortBy)
+  @IsOptional()
+  sortBy?: ProductSortBy
 
   @ApiPropertyOptional({
-    example: 10.0,
-    description: 'Minimum price'
+    enum: SortOrder,
+    description: 'Sort direction'
   })
-  @IsNumber({}, { message: 'Minimum price must be a number' })
-  @Min(0, { message: 'Minimum price must be at least 0' })
+  @IsEnum(SortOrder)
+  @IsOptional()
+  sortOrder?: SortOrder
+
+  // ─── Pagination ───────────────────────────────────────────────────────
+  @ApiPropertyOptional({
+    description: 'Number of items per page',
+    minimum: 1,
+    maximum: 100,
+    default: 20
+  })
+  @IsInt()
+  @Min(1)
+  @Max(100)
   @IsOptional()
   @Type(() => Number)
-  priceMin?: number
+  limit?: number = 20
 
   @ApiPropertyOptional({
-    example: 100.0,
-    description: 'Maximum price'
+    description:
+      'Page number for offset-based pagination (1-based). Mutually exclusive with `cursor`.',
+    minimum: 1,
+    default: 1
   })
-  @IsNumber({}, { message: 'Maximum price must be a number' })
-  @Min(0, { message: 'Maximum price must be at least 0' })
+  @IsInt()
+  @Min(1)
   @IsOptional()
   @Type(() => Number)
-  priceMax?: number
+  page?: number // Don't set default value for page, as it will interfere with cursor-based pagination
 
   @ApiPropertyOptional({
-    example: 'PUBLISHED',
-    description: 'Product status filter'
+    description:
+      'Base64-encoded cursor for search_after pagination. Mutually exclusive with `page`.'
   })
-  @IsString({ message: 'Status must be a string' })
+  @IsString()
   @IsOptional()
-  status?: string
+  cursor?: string
 
+  // ─── Facets ───────────────────────────────────────────────────────────
   @ApiPropertyOptional({
-    example: 0,
-    description: 'Starting index for pagination'
+    description: 'Include aggregation facets (brand counts, category counts, etc.)',
+    default: false
   })
-  @IsInt({ message: 'From must be an integer' })
-  @Min(0, { message: 'From must be at least 0' })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
   @IsOptional()
-  @Type(() => Number)
-  from?: number
-
-  @ApiPropertyOptional({
-    example: 20,
-    description: 'Number of results to return'
-  })
-  @IsInt({ message: 'Size must be an integer' })
-  @Min(1, { message: 'Size must be at least 1' })
-  @IsOptional()
-  @Type(() => Number)
-  size?: number
+  includeFacets?: boolean = false
 }

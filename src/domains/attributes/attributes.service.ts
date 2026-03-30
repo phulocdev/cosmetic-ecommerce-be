@@ -47,7 +47,7 @@ export class AttributesService {
     const limit = query.getAll ? undefined : query.limit || 10
     const skip = query.getAll ? undefined : (page - 1) * limit
 
-    const { categoryId } = query
+    const { categoryId, isGlobalFilter } = query
     const whereClause: Prisma.AttributeWhereInput = {}
 
     if (categoryId) {
@@ -56,6 +56,10 @@ export class AttributesService {
           categoryId
         }
       }
+    }
+
+    if (isGlobalFilter !== undefined) {
+      whereClause.isGlobalFilter = isGlobalFilter
     }
 
     const [attributes, total] = await Promise.all([

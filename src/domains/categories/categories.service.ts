@@ -306,8 +306,11 @@ export class CategoriesService {
     query: GetCategoriesQueryDto,
     dateRange?: UtcDateRange
   ): Promise<OffsetPaginatedResponseDto<Category>> {
-    const { page = 1, limit = 20, sortBy, sortOrder, includeProductCount } = query
-    const skip = (page - 1) * limit
+    const page = query.page || 1
+    const limit = query.getAll ? undefined : query.limit || 10
+    const skip = query.getAll ? undefined : (page - 1) * limit
+
+    const { sortBy, sortOrder, includeProductCount } = query
 
     const where = this.buildCategoryWhereClause(query)
 
@@ -397,12 +400,15 @@ export class CategoriesService {
     }
 
     // Fetch limit + 1 to check if there's a next page
-    const categories = await this.prismaService.category.findMany({
-      where,
-      include,
-      orderBy: orderByList,
-      take: limit + 1
-    })
+    const [categories, totalItems] = await Promise.all([
+      this.prismaService.category.findMany({
+        where,
+        include,
+        orderBy: orderByList,
+        take: limit + 1
+      }),
+      this.prismaService.category.count({ where })
+    ])
 
     const hasNextPage = categories.length > limit
     if (hasNextPage) {
@@ -431,6 +437,7 @@ export class CategoriesService {
       items: categoryItems,
       nextCursor,
       previousCursor,
+      total: totalItems,
       hasNextPage,
       hasPreviousPage: !!cursor
     })
