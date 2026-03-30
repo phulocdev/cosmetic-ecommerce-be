@@ -30,7 +30,7 @@ export class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T
 
     const { statusCode } = context.switchToHttp().getResponse()
 
-    await new Promise((resolve) => setTimeout(resolve, 1500)) // Simulate delay for testing loading states
+    await new Promise((resolve) => setTimeout(resolve, 3000)) // Simulate delay for testing loading states
 
     return next.handle().pipe(
       map((data) => {

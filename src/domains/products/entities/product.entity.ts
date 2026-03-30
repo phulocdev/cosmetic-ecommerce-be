@@ -2,7 +2,6 @@ import { Attribute } from 'domains/attributes/entities/attribute.entity'
 import { Brand } from 'domains/brands/entities/brand.entity'
 import { Category } from 'domains/categories/entities/category.entity'
 import { CountryOfOrigin } from 'domains/country-of-origin/entities/country-of-origin.entity'
-import { ProductStatus } from 'enums'
 
 export class Product {
   id: string
@@ -18,12 +17,10 @@ export class Product {
   createdAt: Date
   updatedAt: Date
 
-  // Relations
   brand: Brand
   countryOfOrigin: CountryOfOrigin
   categories: ProductCategory[]
   variants: ProductVariant[]
-  // attributes: ProductAttribute[]
   images: ProductImage[]
 
   constructor(data: Product) {
@@ -81,7 +78,8 @@ export class VariantAttributeValue {
 export class AttributeValue {
   id: string
   value: string
-  hexColor?: string
+  attributeId: string
+  attribute?: Attribute
 
   constructor(data: AttributeValue) {
     Object.assign(this, data)

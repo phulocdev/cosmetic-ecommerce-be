@@ -90,7 +90,7 @@ export class PaginationQueryDto {
 }
 
 /**
- * The parent Pagination Meta DTO class - in response metadata
+ * The parent Pagination Meta DTO class - in RESPONSE metadata
  */
 
 export class PaginationMetaDto {
@@ -102,15 +102,15 @@ export class PaginationMetaDto {
 
   @ApiProperty({ description: 'Has next page' })
   hasNextPage: boolean
+
+  @ApiProperty({ description: 'Total number of items' })
+  total: number
 }
 
 /**
  * Offset Pagination meta DTO
  */
 export class OffsetPaginationMetaDto extends PaginationMetaDto {
-  @ApiProperty({ description: 'Total number of items' })
-  total: number
-
   @ApiProperty({ description: 'Current page' })
   page: number
 
@@ -178,11 +178,13 @@ export class CursorPaginatedResponseDto<T> {
     items,
     nextCursor,
     previousCursor,
+    total,
     hasNextPage,
     hasPreviousPage
   }: {
     items: T[]
     nextCursor: string | null
+    total: number
     previousCursor: string | null
     hasNextPage: boolean
     hasPreviousPage: boolean
@@ -192,6 +194,7 @@ export class CursorPaginatedResponseDto<T> {
       nextCursor,
       previousCursor,
       limit: items.length,
+      total,
       hasNextPage,
       hasPreviousPage
     }

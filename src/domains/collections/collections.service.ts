@@ -190,12 +190,15 @@ export class CollectionsService {
     }
 
     // Fetch limit + 1 to check if there's a next page
-    const collections = await this.prismaService.collection.findMany({
-      where,
-      include,
-      orderBy: orderByList,
-      take: limit + 1
-    })
+    const [collections, totalItems] = await Promise.all([
+      this.prismaService.collection.findMany({
+        where,
+        include,
+        orderBy: orderByList,
+        take: limit + 1
+      }),
+      this.prismaService.collection.count({ where })
+    ])
 
     const hasNextPage = collections.length > limit
     if (hasNextPage) {
@@ -223,6 +226,7 @@ export class CollectionsService {
     return new CursorPaginatedResponseDto<Collection>({
       items: collectionItems,
       nextCursor,
+      total: totalItems,
       previousCursor,
       hasNextPage,
       hasPreviousPage: !!cursor
@@ -269,6 +273,10 @@ export class CollectionsService {
   }
 
   async findBySlug(slug: string) {
+    if (!slug) {
+      throw new BadRequestException('Slug is required')
+    }
+
     const collection = await this.prismaService.collection.findFirst({
       where: { slug, isDeleted: false, isActive: true },
       include: {
@@ -284,7 +292,6 @@ export class CollectionsService {
               select: {
                 id: true,
                 name: true,
-                displayName: true,
                 values: {
                   where: { isDeleted: false },
                   select: { id: true, value: true },
@@ -597,7 +604,7 @@ export class CollectionsService {
    * admin can confirm / tweak the filter panel.
    */
   async deriveFromProducts(productIds: string[]): Promise<{
-    attributes: { id: string; name: string; slug: string; displayName: string | null }[]
+    attributes: { id: string; name: string; slug: string }[]
     categories: { id: string; name: string; slug: string; parentId: string | null; depth: number }[]
   }> {
     if (!productIds?.length) {
@@ -638,7 +645,7 @@ export class CollectionsService {
           }
         }
       },
-      select: { id: true, name: true, slug: true, displayName: true },
+      select: { id: true, name: true, slug: true },
       orderBy: { name: 'asc' }
     })
 

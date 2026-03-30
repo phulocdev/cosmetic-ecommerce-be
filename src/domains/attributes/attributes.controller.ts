@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common'
-import { OffsetPaginatedResponseDto, ParseUUIDPipe } from 'core'
+import { OffsetPaginatedResponseDto, ParseUUIDPipe, Public } from 'core'
 import { FindAllAttributeDto } from 'domains/attributes/dto/find-all-attribute.dto'
 import { Attribute } from 'domains/attributes/entities/attribute.entity'
 import { AttributesService } from './attributes.service'
@@ -15,6 +15,7 @@ export class AttributesController {
     return this.attributesService.create(createAttributeDto)
   }
 
+  @Public()
   @Get()
   findAll(@Query() query: FindAllAttributeDto): Promise<OffsetPaginatedResponseDto<Attribute>> {
     return this.attributesService.findAll(query)

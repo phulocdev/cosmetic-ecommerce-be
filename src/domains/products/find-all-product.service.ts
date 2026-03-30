@@ -1,12 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { PaginationQueryDto } from 'core'
+import { CursorPaginatedResponseDto, OffsetPaginatedResponseDto, PaginationQueryDto } from 'core'
 import { PrismaService } from 'database/prisma/prisma.service'
-import {
-  CursorPaginatedProductListResponse,
-  OffsetPaginatedProductListResponse,
-  ProductQueryDto
-} from 'domains/products/dto/find-all-product.dto'
+import { ProductQueryDto } from 'domains/products/dto/find-all-product.dto'
 import { Product } from 'domains/products/entities'
 import { ProductSortBy, SortOrder } from 'enums'
 import { ProductCursorData } from 'types'
@@ -33,7 +29,7 @@ export class FindAllProductService {
   async findAllWithOffsetPagination(
     query: ProductQueryDto,
     utcDateRange?: UtcDateRange
-  ): Promise<OffsetPaginatedProductListResponse> {
+  ): Promise<OffsetPaginatedResponseDto<Product>> {
     const page = query.page || 1
     const limit = query.limit || 10
     const skip = (page - 1) * limit
@@ -69,12 +65,11 @@ export class FindAllProductService {
       this.prismaService.product.count({ where })
     ])
 
-    return new OffsetPaginatedProductListResponse({
-      items: products,
+    return new OffsetPaginatedResponseDto<Product>({
+      items: products as unknown as Product[],
       limit,
       page,
-      total,
-      filters: { applied: this.getAppliedFilters(query) }
+      total
     })
   }
 
@@ -96,7 +91,7 @@ export class FindAllProductService {
   async findAllWithCursorPagination(
     query: ProductQueryDto & PaginationQueryDto,
     utcDateRange?: UtcDateRange
-  ): Promise<CursorPaginatedProductListResponse> {
+  ): Promise<CursorPaginatedResponseDto<Product>> {
     const limit = query.limit || 20
     const cursor = query.cursor
     const sortBy = query.sortBy || ProductSortBy.CREATED_AT
@@ -134,12 +129,15 @@ export class FindAllProductService {
     const include = this.buildIncludeClause(query)
 
     // Fetch limit + 1 to check if there's a next page
-    let products = await this.prismaService.product.findMany({
-      where,
-      include,
-      orderBy,
-      take: limit + 1
-    })
+    let [products, totalItems] = await Promise.all([
+      this.prismaService.product.findMany({
+        where,
+        include,
+        orderBy,
+        take: limit + 1
+      }),
+      this.prismaService.product.count({ where })
+    ])
 
     // Check if there's a next page
     const hasNextPage = products.length > limit
@@ -161,13 +159,13 @@ export class FindAllProductService {
       previousCursor = this.encodeCursor(firstItem as any, sortBy)
     }
 
-    return new CursorPaginatedProductListResponse({
-      items: products,
+    return new CursorPaginatedResponseDto<Product>({
+      items: products as unknown as Product[],
       nextCursor,
       previousCursor,
+      total: totalItems,
       hasNextPage,
-      hasPreviousPage: !!cursor,
-      filters: { applied: this.getAppliedFilters(query) }
+      hasPreviousPage: !!cursor
     })
   }
 
@@ -214,18 +212,6 @@ export class FindAllProductService {
           some: {
             category: {
               slug: query.categorySlug
-            }
-          }
-        }
-      })
-    }
-
-    if (query.categoryPath) {
-      ;(where.AND as any[]).push({
-        categories: {
-          some: {
-            category: {
-              path: { startsWith: query.categoryPath }
             }
           }
         }
@@ -590,34 +576,5 @@ export class FindAllProductService {
     }
 
     return Buffer.from(JSON.stringify(cursorData)).toString('base64')
-  }
-
-  /**
-   * Get applied filters for response metadata
-   */
-  private getAppliedFilters(query: ProductQueryDto): Record<string, any> {
-    const applied: Record<string, any> = {}
-
-    if (query.searchQuery) applied.searchQuery = query.searchQuery
-    if (query.status) applied.status = query.status
-    if (query.categoryIds) applied.categoryIds = query.categoryIds
-    if (query.categorySlug) applied.categorySlug = query.categorySlug
-    if (query.categoryPath) applied.categoryPath = query.categoryPath
-    if (query.brandIds) applied.brandIds = query.brandIds
-    if (query.countryIds) applied.countryIds = query.countryIds
-    if (query.minPrice !== undefined) applied.minPrice = query.minPrice
-    if (query.maxPrice !== undefined) applied.maxPrice = query.maxPrice
-    if (query.inStock !== undefined) applied.inStock = query.inStock
-    if (query.minStock !== undefined) applied.minStock = query.minStock
-    if (query.maxStock !== undefined) applied.maxStock = query.maxStock
-    if (query.hasActiveVariants !== undefined) applied.hasActiveVariants = query.hasActiveVariants
-    if (query.minVariantPrice !== undefined) applied.minVariantPrice = query.minVariantPrice
-    if (query.maxVariantPrice !== undefined) applied.maxVariantPrice = query.maxVariantPrice
-    if (query.sku) applied.sku = query.sku
-    if (query.attributes) applied.attributes = query.attributes
-    if (query.sortBy) applied.sortBy = query.sortBy
-    if (query.sortOrder) applied.sortOrder = query.sortOrder
-
-    return applied
   }
 }

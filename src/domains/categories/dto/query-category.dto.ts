@@ -76,6 +76,11 @@ export class GetCategoriesQueryDto extends PaginationQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includeAttributes?: boolean
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  getAll?: boolean
 }
 
 export class GetCategoryTreeQueryDto {
