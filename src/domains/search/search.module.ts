@@ -9,11 +9,11 @@ import { ElasticsearchModule } from '@nestjs/elasticsearch'
   imports: [
     ElasticsearchModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
-        node: configService.get('ELASTICSEARCH_NODE')
-        // auth: {
-        //   username: configService.get('ELASTICSEARCH_USERNAME'),
-        //   password: configService.get('ELASTICSEARCH_PASSWORD')
-        // }
+        node: configService.get('ELASTICSEARCH_NODE'),
+        auth: {
+          username: configService.get('ELASTICSEARCH_USERNAME'),
+          password: configService.get('ELASTICSEARCH_PASSWORD')
+        }
       }),
       inject: [ConfigService]
     })
