@@ -55,6 +55,7 @@ export class CategoriesController {
     return this.categoriesService.create(createCategoryDto)
   }
 
+  @Public()
   @Get('tree')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get category tree (hierarchical structure)' })
@@ -67,6 +68,7 @@ export class CategoriesController {
     return this.categoriesService.getCategoryTree(query)
   }
 
+  @Public()
   @Get(':id/breadcrumbs')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get breadcrumb trail for a category' })

@@ -26,7 +26,9 @@ export class RequestLoggerMiddleware implements NestMiddleware {
       const contentLength = res.get('content-length') || 0
 
       const logMessage = `${method} ${originalUrl} ${statusCode} ${contentLength}B - ${duration}ms`
-      const context = `RequestID: ${requestId} | IP: ${ip}`
+      const idempotencyKey = req.headers['idempotency-key'] as string
+      const idempotencyInfo = idempotencyKey ? ` | Idempotency: ${idempotencyKey}` : ''
+      const context = `RequestID: ${requestId} | IP: ${ip}${idempotencyInfo}`
 
       if (statusCode >= 500) {
         this.logger.error(logMessage, context)
