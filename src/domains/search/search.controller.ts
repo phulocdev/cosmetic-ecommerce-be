@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, Post, Query } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { Public } from 'core'
 import { SearchProductsDto } from 'domains/search/dto/search-product.dto'
@@ -19,10 +19,10 @@ export class SearchController {
    * into the standard ApiResponse format automatically.
    */
   @Public()
-  @Get('products')
+  @Post('products')
   @ApiOperation({ summary: 'Search products using ElasticSearch' })
-  async searchProducts(@Query() dto: SearchProductsDto): Promise<SearchProductsResult> {
-    return this.searchService.searchProducts(dto)
+  async searchProducts(@Body() body: SearchProductsDto): Promise<SearchProductsResult> {
+    return this.searchService.searchProducts(body)
   }
 
   /**

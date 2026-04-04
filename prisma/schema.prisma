@@ -189,6 +189,7 @@ model Category {
   slug        String    @unique
   description String?   @default("")
   parentId    String?  // default value of this field is null -> top-level category, otherwise it's a child category 
+  imageUrl    String?   @default("")
   
   // Materialized path for performance
   path        String    @default("/") 
