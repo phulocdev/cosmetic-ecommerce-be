@@ -86,6 +86,7 @@ export class CategoriesService {
         name: cat.name,
         slug: cat.slug,
         path: cat.path,
+        imageUrl: cat.imageUrl,
         depth: cat.depth,
         isActive: cat.isActive,
         productCount: includeProductCount ? cat._count?.products : undefined
@@ -168,6 +169,7 @@ export class CategoriesService {
         name: cat.name,
         slug: cat.slug,
         path: cat.path,
+        imageUrl: cat.imageUrl,
         depth: cat.depth,
         isActive: cat.isActive,
         productCount: includeProductCount ? (cat as any)._count?.products : undefined,

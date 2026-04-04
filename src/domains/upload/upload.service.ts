@@ -29,6 +29,8 @@ export class UploadService {
     try {
       const result = await this.streamFromDisk(tempPath, folder)
       return this.mapResult(file, result)
+    } catch (error) {
+      throw error
     } finally {
       // Always clean up — even if Cloudinary threw an error
       await this.deleteTempFile(tempPath)

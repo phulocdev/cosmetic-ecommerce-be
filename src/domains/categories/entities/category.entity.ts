@@ -11,6 +11,9 @@ export class Category {
   @ApiProperty()
   slug: string
 
+  @ApiProperty()
+  imageUrl: string
+
   @ApiPropertyOptional()
   description?: string
 
@@ -61,6 +64,9 @@ export class CategoryTreeNode {
 
   @ApiProperty()
   slug: string
+
+  @ApiProperty()
+  imageUrl: string
 
   @ApiProperty()
   path: string
