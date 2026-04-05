@@ -1,8 +1,8 @@
+import React from 'react'
 import {
   Body,
   Button,
   Container,
-  Column,
   Head,
   Heading,
   Hr,
@@ -10,12 +10,9 @@ import {
   Img,
   Link,
   Preview,
-  Row,
   Section,
-  Text,
-  Font
+  Text
 } from '@react-email/components'
-import * as React from 'react'
 
 interface ResetPasswordTemplateProps {
   name: string
@@ -23,190 +20,80 @@ interface ResetPasswordTemplateProps {
   clientBaseUrl: string
 }
 
-export const ResetPasswordTemplate = ({
-  name = 'Nguyễn Văn A',
-  resetToken = 'sample-token-123',
-  clientBaseUrl = 'https://example.com'
-}: ResetPasswordTemplateProps) => {
-  const resetUrl = `${clientBaseUrl}/reset-password?token=${resetToken}`
-  const expiryHours = 1
+export default function ResetPasswordTemplate({ name, resetToken, clientBaseUrl }: ResetPasswordTemplateProps) {
+  const resetLink = `${clientBaseUrl}/reset-password?token=${resetToken}`
 
   return (
-    <Html lang='vi' dir='ltr'>
-      <Head>
-        <Font
-          fontFamily='Be Vietnam Pro'
-          fallbackFontFamily='Arial'
-          webFont={{
-            url: 'https://fonts.gstatic.com/s/bevietnampro/v11/QdVPSTAyLFyeg_IDWvOJmVES_HToIl8yNom9kg.woff2',
-            format: 'woff2'
-          }}
-          fontWeight={400}
-          fontStyle='normal'
-        />
-        <Font
-          fontFamily='Be Vietnam Pro'
-          fallbackFontFamily='Arial'
-          webFont={{
-            url: 'https://fonts.gstatic.com/s/bevietnampro/v11/QdVNSTAyLFyeg_IDWvOJmVES_HToIl8yNo63.woff2',
-            format: 'woff2'
-          }}
-          fontWeight={600}
-          fontStyle='normal'
-        />
-        <Font
-          fontFamily='Be Vietnam Pro'
-          fallbackFontFamily='Arial'
-          webFont={{
-            url: 'https://fonts.gstatic.com/s/bevietnampro/v11/QdVNSTAyLFyeg_IDWvOJmVES_HToIl8yNo63.woff2',
-            format: 'woff2'
-          }}
-          fontWeight={700}
-          fontStyle='normal'
-        />
-      </Head>
-
-      <Preview>
-        Đặt lại mật khẩu của bạn — liên kết có hiệu lực trong {`${expiryHours}`} giờ
-      </Preview>
-
-      <Body style={bodyStyle}>
-        {/* Outer wrapper */}
-        <Container style={outerContainerStyle}>
-          {/* ── Header bar ── */}
-          <Section style={headerStyle}>
-            <Row>
-              <Column>
-                <Text style={logoTextStyle}>● YourBrand</Text>
-              </Column>
-            </Row>
+    <Html>
+      <Head />
+      <Preview>Reset your password</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          {/* Logo Section */}
+          <Section style={logoSection}>
+            <Img src={`${clientBaseUrl}/logo.png`} width='48' height='48' alt='Logo' style={logo} />
           </Section>
 
-          {/* ── Hero accent line ── */}
-          <Section style={accentBarStyle} />
+          {/* Main Content */}
+          <Section style={content}>
+            <Heading style={heading}>Reset your password</Heading>
 
-          {/* ── Main card ── */}
-          <Section style={cardStyle}>
-            {/* Icon */}
-            <Row>
-              <Column align='center'>
-                <Section style={iconWrapperStyle}>
-                  <Text style={iconStyle}>🔐</Text>
-                </Section>
-              </Column>
-            </Row>
+            <Text style={greeting}>Hi {name},</Text>
 
-            {/* Heading */}
-            <Row>
-              <Column>
-                <Heading style={headingStyle}>Đặt lại mật khẩu</Heading>
-                <Text style={subHeadingStyle}>
-                  Xin chào <strong>{name}</strong>,
-                </Text>
-                <Text style={bodyTextStyle}>
-                  Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn vào
-                  nút bên dưới để tạo mật khẩu mới. Liên kết này chỉ có hiệu lực trong{' '}
-                  <strong>{expiryHours} giờ</strong>.
-                </Text>
-              </Column>
-            </Row>
+            <Text style={paragraph}>
+              We received a request to reset the password for your account. If you didn't make this request, you can
+              safely ignore this email.
+            </Text>
+
+            <Text style={paragraph}>
+              To reset your password, click the button below. This link will expire in <strong>1 hour</strong> for
+              security reasons.
+            </Text>
 
             {/* CTA Button */}
-            <Row>
-              <Column align='center'>
-                <Button style={buttonStyle} href={resetUrl}>
-                  Đặt lại mật khẩu ngay
-                </Button>
-              </Column>
-            </Row>
+            <Section style={buttonSection}>
+              <Button style={button} href={resetLink}>
+                Reset Password
+              </Button>
+            </Section>
 
-            {/* Divider */}
-            <Row>
-              <Column>
-                <Hr style={hrStyle} />
-              </Column>
-            </Row>
+            <Text style={paragraph}>Or copy and paste this URL into your browser:</Text>
 
-            {/* Fallback link */}
-            <Row>
-              <Column>
-                <Text style={fallbackLabelStyle}>
-                  Nút không hoạt động? Sao chép và dán liên kết sau vào trình duyệt:
-                </Text>
-                <Text style={fallbackLinkStyle}>
-                  <Link href={resetUrl} style={linkStyle}>
-                    {resetUrl}
-                  </Link>
-                </Text>
-              </Column>
-            </Row>
+            <Text style={linkText}>
+              <Link href={resetLink} style={link}>
+                {resetLink}
+              </Link>
+            </Text>
 
-            {/* Warning box */}
-            <Row>
-              <Column>
-                <Section style={warningBoxStyle}>
-                  <Row>
-                    <Column width={28}>
-                      <Text style={warningIconStyle}>⚠️</Text>
-                    </Column>
-                    <Column>
-                      <Text style={warningTextStyle}>
-                        Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này. Tài khoản
-                        của bạn vẫn an toàn.
-                      </Text>
-                    </Column>
-                  </Row>
-                </Section>
-              </Column>
-            </Row>
+            <Hr style={divider} />
+
+            {/* Security Notice */}
+            <Section style={securitySection}>
+              <Text style={securityHeading}>🔒 Security Tips</Text>
+              <Text style={securityText}>
+                • Never share your password with anyone
+                <br />
+                • Use a strong, unique password
+                <br />• Enable two-factor authentication if available
+              </Text>
+            </Section>
           </Section>
 
-          {/* ── Security tips card ── */}
-          <Section style={tipsCardStyle}>
-            <Text style={tipsTitleStyle}>Mẹo bảo mật tài khoản</Text>
-            <Row>
-              <Column style={tipItemStyle}>
-                <Text style={tipEmojiStyle}>🔑</Text>
-                <Text style={tipTextStyle}>Dùng mật khẩu dài ≥ 12 ký tự</Text>
-              </Column>
-              <Column style={tipItemStyle}>
-                <Text style={tipEmojiStyle}>🔄</Text>
-                <Text style={tipTextStyle}>Không dùng lại mật khẩu cũ</Text>
-              </Column>
-              <Column style={tipItemStyle}>
-                <Text style={tipEmojiStyle}>🛡️</Text>
-                <Text style={tipTextStyle}>Bật xác thực hai yếu tố</Text>
-              </Column>
-            </Row>
-          </Section>
+          {/* Footer */}
+          <Section style={footer}>
+            <Text style={footerText}>
+              If you didn't request a password reset, please ignore this email or{' '}
+              <Link href={`${clientBaseUrl}/support`} style={footerLink}>
+                contact support
+              </Link>{' '}
+              if you have concerns.
+            </Text>
 
-          {/* ── Footer ── */}
-          <Section style={footerStyle}>
-            <Text style={footerTextStyle}>
-              Email này được gửi từ{' '}
-              <Link href={clientBaseUrl} style={footerLinkStyle}>
-                YourBrand
-              </Link>
-              . Nếu bạn có thắc mắc, hãy liên hệ{' '}
-              <Link href='mailto:support@yourbrand.vn' style={footerLinkStyle}>
-                support@yourbrand.vn
-              </Link>
-              .
-            </Text>
-            <Text style={footerTextStyle}>
-              © {new Date().getFullYear()} YourBrand. Bảo lưu mọi quyền.
-            </Text>
-            <Row>
-              <Column align='center'>
-                <Link href={`${clientBaseUrl}/unsubscribe`} style={unsubscribeLinkStyle}>
-                  Huỷ đăng ký nhận email
-                </Link>
-                {' · '}
-                <Link href={`${clientBaseUrl}/privacy`} style={unsubscribeLinkStyle}>
-                  Chính sách bảo mật
-                </Link>
-              </Column>
-            </Row>
+            <Hr style={footerDivider} />
+
+            <Text style={footerCopyright}>© {new Date().getFullYear()} Your Company. All rights reserved.</Text>
+
+            <Text style={footerAddress}>123 Business Street, Suite 100, City, State 12345</Text>
           </Section>
         </Container>
       </Body>
@@ -214,206 +101,155 @@ export const ResetPasswordTemplate = ({
   )
 }
 
-export default ResetPasswordTemplate
-
-// ─── Styles ────────────────────────────────────────────────────────────────────
-
-const bodyStyle: React.CSSProperties = {
-  backgroundColor: '#F0F2F5',
-  fontFamily: "'Be Vietnam Pro', Arial, sans-serif",
-  margin: 0,
-  padding: '32px 0'
+// Styles
+const main: React.CSSProperties = {
+  backgroundColor: '#f6f9fc',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif'
 }
 
-const outerContainerStyle: React.CSSProperties = {
-  maxWidth: '580px',
-  margin: '0 auto'
+const container: React.CSSProperties = {
+  backgroundColor: '#ffffff',
+  margin: '0 auto',
+  maxWidth: '600px',
+  borderRadius: '12px',
+  overflow: 'hidden',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07)'
 }
 
-// Header
-const headerStyle: React.CSSProperties = {
-  backgroundColor: '#0A0A0A',
-  borderRadius: '12px 12px 0 0',
-  padding: '20px 32px'
+const logoSection: React.CSSProperties = {
+  backgroundColor: '#0f172a',
+  padding: '32px 40px',
+  textAlign: 'center' as const
 }
 
-const logoTextStyle: React.CSSProperties = {
-  color: '#FFFFFF',
-  fontSize: '18px',
-  fontWeight: 700,
-  letterSpacing: '-0.3px',
-  margin: 0
+const logo: React.CSSProperties = {
+  margin: '0 auto',
+  borderRadius: '8px'
 }
 
-// Accent bar — thin gradient stripe
-const accentBarStyle: React.CSSProperties = {
-  background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-  height: '4px'
+const content: React.CSSProperties = {
+  padding: '40px'
 }
 
-// Main card
-const cardStyle: React.CSSProperties = {
-  backgroundColor: '#FFFFFF',
-  padding: '40px 40px 32px'
-}
-
-const iconWrapperStyle: React.CSSProperties = {
-  backgroundColor: '#F5F3FF',
-  borderRadius: '50%',
-  width: '64px',
-  height: '64px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  margin: '0 auto 24px'
-}
-
-const iconStyle: React.CSSProperties = {
+const heading: React.CSSProperties = {
+  color: '#0f172a',
   fontSize: '28px',
-  margin: 0,
-  textAlign: 'center',
-  lineHeight: '64px'
+  fontWeight: '700',
+  lineHeight: '1.3',
+  margin: '0 0 24px',
+  textAlign: 'center' as const
 }
 
-const headingStyle: React.CSSProperties = {
-  color: '#0A0A0A',
-  fontSize: '26px',
-  fontWeight: 700,
-  letterSpacing: '-0.5px',
-  lineHeight: '1.2',
-  margin: '0 0 12px',
-  textAlign: 'center'
-}
-
-const subHeadingStyle: React.CSSProperties = {
-  color: '#374151',
-  fontSize: '15px',
+const greeting: React.CSSProperties = {
+  color: '#0f172a',
+  fontSize: '16px',
   lineHeight: '1.6',
+  margin: '0 0 16px',
+  fontWeight: '600'
+}
+
+const paragraph: React.CSSProperties = {
+  color: '#475569',
+  fontSize: '15px',
+  lineHeight: '1.7',
+  margin: '0 0 16px'
+}
+
+const buttonSection: React.CSSProperties = {
+  textAlign: 'center' as const,
+  margin: '32px 0'
+}
+
+const button: React.CSSProperties = {
+  backgroundColor: '#0f172a',
+  borderRadius: '8px',
+  color: '#ffffff',
+  display: 'inline-block',
+  fontSize: '16px',
+  fontWeight: '600',
+  padding: '14px 32px',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  transition: 'background-color 0.2s ease'
+}
+
+const linkText: React.CSSProperties = {
+  backgroundColor: '#f1f5f9',
+  borderRadius: '6px',
+  color: '#64748b',
+  fontSize: '13px',
+  lineHeight: '1.5',
+  margin: '0 0 24px',
+  padding: '12px 16px',
+  wordBreak: 'break-all' as const
+}
+
+const link: React.CSSProperties = {
+  color: '#3b82f6',
+  textDecoration: 'none'
+}
+
+const divider: React.CSSProperties = {
+  borderColor: '#e2e8f0',
+  borderStyle: 'solid',
+  borderWidth: '1px 0 0',
+  margin: '24px 0'
+}
+
+const securitySection: React.CSSProperties = {
+  backgroundColor: '#f8fafc',
+  borderRadius: '8px',
+  padding: '20px',
   margin: '0 0 8px'
 }
 
-const bodyTextStyle: React.CSSProperties = {
-  color: '#6B7280',
-  fontSize: '15px',
-  lineHeight: '1.7',
-  margin: '0 0 28px'
+const securityHeading: React.CSSProperties = {
+  color: '#0f172a',
+  fontSize: '14px',
+  fontWeight: '600',
+  margin: '0 0 8px'
 }
 
-const buttonStyle: React.CSSProperties = {
-  background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-  borderRadius: '10px',
-  color: '#FFFFFF',
-  display: 'inline-block',
-  fontSize: '15px',
-  fontWeight: 600,
-  letterSpacing: '0.2px',
-  padding: '14px 36px',
-  textDecoration: 'none',
-  margin: '0 0 28px',
-  boxShadow: '0 4px 15px rgba(99,102,241,0.35)'
+const securityText: React.CSSProperties = {
+  color: '#64748b',
+  fontSize: '13px',
+  lineHeight: '1.8',
+  margin: '0'
 }
 
-const hrStyle: React.CSSProperties = {
-  borderColor: '#E5E7EB',
-  borderTopWidth: '1px',
-  margin: '0 0 20px'
+const footer: React.CSSProperties = {
+  backgroundColor: '#f8fafc',
+  padding: '24px 40px',
+  textAlign: 'center' as const
 }
 
-const fallbackLabelStyle: React.CSSProperties = {
-  color: '#9CA3AF',
+const footerText: React.CSSProperties = {
+  color: '#64748b',
+  fontSize: '13px',
+  lineHeight: '1.6',
+  margin: '0 0 16px'
+}
+
+const footerLink: React.CSSProperties = {
+  color: '#3b82f6',
+  textDecoration: 'underline'
+}
+
+const footerDivider: React.CSSProperties = {
+  borderColor: '#e2e8f0',
+  borderStyle: 'solid',
+  borderWidth: '1px 0 0',
+  margin: '16px 0'
+}
+
+const footerCopyright: React.CSSProperties = {
+  color: '#94a3b8',
   fontSize: '12px',
   margin: '0 0 4px'
 }
 
-const fallbackLinkStyle: React.CSSProperties = {
-  fontSize: '12px',
-  margin: '0 0 24px',
-  wordBreak: 'break-all'
-}
-
-const linkStyle: React.CSSProperties = {
-  color: '#6366F1',
-  textDecoration: 'underline'
-}
-
-// Warning box
-const warningBoxStyle: React.CSSProperties = {
-  backgroundColor: '#FFFBEB',
-  border: '1px solid #FDE68A',
-  borderRadius: '8px',
-  padding: '14px 16px'
-}
-
-const warningIconStyle: React.CSSProperties = {
-  fontSize: '16px',
-  margin: 0,
-  lineHeight: '1.5'
-}
-
-const warningTextStyle: React.CSSProperties = {
-  color: '#92400E',
-  fontSize: '13px',
-  lineHeight: '1.6',
-  margin: 0
-}
-
-// Tips card
-const tipsCardStyle: React.CSSProperties = {
-  backgroundColor: '#FAFAFA',
-  border: '1px solid #E5E7EB',
-  padding: '24px 32px'
-}
-
-const tipsTitleStyle: React.CSSProperties = {
-  color: '#374151',
-  fontSize: '13px',
-  fontWeight: 600,
-  letterSpacing: '0.8px',
-  textTransform: 'uppercase',
-  margin: '0 0 16px'
-}
-
-const tipItemStyle: React.CSSProperties = {
-  textAlign: 'center',
-  padding: '0 8px'
-}
-
-const tipEmojiStyle: React.CSSProperties = {
-  fontSize: '22px',
-  margin: '0 0 4px',
-  textAlign: 'center'
-}
-
-const tipTextStyle: React.CSSProperties = {
-  color: '#6B7280',
-  fontSize: '12px',
-  lineHeight: '1.5',
-  margin: 0,
-  textAlign: 'center'
-}
-
-// Footer
-const footerStyle: React.CSSProperties = {
-  backgroundColor: '#0A0A0A',
-  borderRadius: '0 0 12px 12px',
-  padding: '24px 32px'
-}
-
-const footerTextStyle: React.CSSProperties = {
-  color: '#6B7280',
-  fontSize: '12px',
-  lineHeight: '1.7',
-  margin: '0 0 4px',
-  textAlign: 'center'
-}
-
-const footerLinkStyle: React.CSSProperties = {
-  color: '#9CA3AF',
-  textDecoration: 'underline'
-}
-
-const unsubscribeLinkStyle: React.CSSProperties = {
-  color: '#4B5563',
+const footerAddress: React.CSSProperties = {
+  color: '#94a3b8',
   fontSize: '11px',
-  textDecoration: 'underline'
+  margin: '0'
 }
