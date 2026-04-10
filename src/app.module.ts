@@ -16,7 +16,10 @@ import { BrandsModule } from './domains/brands/brands.module'
 import { CollectionsModule } from './domains/collections/collections.module'
 import { CountryOfOriginModule } from './domains/country-of-origin/country-of-origin.module'
 import { UploadModule } from './domains/upload/upload.module'
-import { CartModule } from './domains/cart/cart.module';
+import { CartModule } from './domains/cart/cart.module'
+import { OrdersModule } from './domains/orders/orders.module'
+import { PaymentModule } from './domains/payment/payment.module'
+
 @Module({
   imports: [
     // Core Modules
@@ -51,7 +54,9 @@ import { CartModule } from './domains/cart/cart.module';
     AttributesModule,
     UploadModule,
     CollectionsModule,
-    CartModule
+    CartModule,
+    OrdersModule,
+    PaymentModule
   ],
   controllers: [AppController],
   providers: [AppService]

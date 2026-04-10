@@ -1,4 +1,4 @@
-import { UserRole } from 'enums'
+import { OrderStatus, UserRole } from 'enums'
 
 /**
  * Standard API response structure
@@ -102,6 +102,14 @@ export class CollectionCursorData {
   createdAt?: Date
   title?: string
   slug?: string
+}
+
+export class OrderCursorData {
+  id: string
+  createdAt?: Date
+  totalPrice?: string
+  status?: OrderStatus
+  code?: string
 }
 
 export interface TransactionManager {

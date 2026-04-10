@@ -8,7 +8,6 @@ import {
 import { ConfigService } from '@nestjs/config'
 import { CartItem } from '@prisma/client'
 import { PrismaService } from 'database/prisma/prisma.service'
-import { CartRedisService } from './cart-redis.service'
 import { CartGateway } from './cart.gateway'
 import { AddToCartDto } from './dto/add-to-cart.dto'
 import { UpdateCartItemDto } from './dto/update-cart-item.dto'
@@ -25,21 +24,12 @@ import { Request, Response } from 'express'
 
 const CART_COOKIE_NAME = 'cart_id'
 
-/**
- * CartService
- * ===========
- * Main business logic for cart operations.
- * Now also handles cookie management, WebSocket emission, and guestCartId extraction
- * to keep CartController pure.
- */
-@Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name)
   private readonly cartCookieMaxAgeMs: number
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cartRedis: CartRedisService,
     private readonly cartGateway: CartGateway,
     private readonly configService: ConfigService
   ) {
@@ -183,10 +173,10 @@ export class CartService {
     if (!cartId) return null
 
     // Try Redis cache first
-    const cachedCart = await this.cartRedis.getCart(cartId)
-    if (cachedCart) {
-      return cachedCart
-    }
+    // const cachedCart = await this.cartRedis.getCart(cartId)
+    // if (cachedCart) {
+    //   return cachedCart
+    // }
 
     // Fallback to DB
     const dbCart = await this.prisma.cart.findUnique({
@@ -194,11 +184,11 @@ export class CartService {
       include: CART_INCLUDE
     })
 
-    if (dbCart) {
-      // Cache in Redis
-      const isGuest = !dbCart.userId
-      await this.cartRedis.setCart(dbCart.id, dbCart, isGuest)
-    }
+    // if (dbCart) {
+    //   // Cache in Redis
+    //   const isGuest = !dbCart.userId
+    //   await this.cartRedis.setCart(dbCart.id, dbCart, isGuest)
+    // }
 
     return dbCart
   }
@@ -218,21 +208,21 @@ export class CartService {
    * Create a new cart (for guest or authenticated user)
    */
   private async createCart(userId?: string): Promise<CartWithItems> {
-    const guestTtlMs = this.cartRedis.getGuestCartTtlMs()
-    const expiresAt = userId ? null : new Date(Date.now() + guestTtlMs)
+    // const guestTtlMs = this.cartRedis.getGuestCartTtlMs()
+    // const expiresAt = userId ? null : new Date(Date.now() + guestTtlMs)
 
     const cart = await this.prisma.cart.create({
       data: {
         userId: userId || null,
-        totalPrice: 0,
-        expiresAt
+        totalPrice: 0
+        // expiresAt
       },
       include: CART_INCLUDE
     })
 
     // Cache in Redis
     const isGuest = !userId
-    await this.cartRedis.setCart(cart.id, cart, isGuest)
+    // await this.cartRedis.setCart(cart.id, cart, isGuest)
 
     return cart
   }
@@ -247,13 +237,13 @@ export class CartService {
    */
   async addItem(cartId: string, dto: AddToCartDto, idempotencyKey?: string): Promise<EnrichedCart> {
     // 1. Check idempotency key (return cached response for retries)
-    if (idempotencyKey) {
-      const cachedResponse = await this.cartRedis.getIdempotencyResponse(idempotencyKey)
-      if (cachedResponse) {
-        this.logger.log(`Idempotency hit: ${idempotencyKey}`)
-        return cachedResponse
-      }
-    }
+    // if (idempotencyKey) {
+    //   const cachedResponse = await this.cartRedis.getIdempotencyResponse(idempotencyKey)
+    //   if (cachedResponse) {
+    //     this.logger.log(`Idempotency hit: ${idempotencyKey}`)
+    //     return cachedResponse
+    //   }
+    // }
 
     // 2. Validate product variant exists and is available
     const variant = await this.prisma.productVariant.findUnique({
@@ -314,9 +304,9 @@ export class CartService {
     const updatedCart = await this.recalculateAndSync(cartId)
 
     // 5. Store idempotency response
-    if (idempotencyKey) {
-      await this.cartRedis.setIdempotencyResponse(idempotencyKey, updatedCart)
-    }
+    // if (idempotencyKey) {
+    //   await this.cartRedis.setIdempotencyResponse(idempotencyKey, updatedCart)
+    // }
 
     return updatedCart
   }
@@ -572,7 +562,7 @@ export class CartService {
 
     // 4. Delete guest cart
     await this.prisma.cart.delete({ where: { id: guestCartId } })
-    await this.cartRedis.deleteCart(guestCartId)
+    // await this.cartRedis.deleteCart(guestCartId)
 
     // 5. Recalculate and return user cart
     return this.recalculateAndSync(userCart.id)
@@ -656,7 +646,7 @@ export class CartService {
 
     // Sync to Redis
     const isGuest = !updatedCart.userId
-    await this.cartRedis.setCart(cartId, updatedCart, isGuest)
+    // await this.cartRedis.setCart(cartId, updatedCart, isGuest)
 
     return this.enrichCartWithPriceChanges(updatedCart)
   }

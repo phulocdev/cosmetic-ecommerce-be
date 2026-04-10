@@ -339,7 +339,7 @@ model User {
   email String? @unique
   googleId   String? @unique
   facebookId String? @unique   
-  password String
+  password String?
   code String @unique
   fullName String? @default("") // when has @default here, the value of this filed can be empty string "" -> nullable
   phoneNumber String? @default("")
@@ -408,10 +408,13 @@ model Order {
 
   userId String
 
+  idempotencyKey String? @unique
   code String? @unique
   status OrderStatus @default(PROCESSING)
   totalPrice Decimal @db.Decimal(10, 2)
+  shippingFee Decimal @db.Decimal(10, 2) @default(0)
   paymentMethod PaymentMethod @default(COD)
+  cancelReason String? @default("")
 
   paidAt DateTime?
   deliveredAt DateTime?
@@ -427,6 +430,7 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([createdAt, id])
   @@map("Order")
 }
 
@@ -436,8 +440,8 @@ model ShippingInfo {
   orderId String @unique
 
   fullName String @default("")
-  email String @unique
-  phoneNumber String @unique
+  email String @default("")
+  phoneNumber String @default("")
 
   province String @default("")
   district String @default("")

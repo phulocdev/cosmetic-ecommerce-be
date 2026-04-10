@@ -42,7 +42,9 @@ export class BusinessException extends BaseException {
  */
 export class EntityNotFoundException extends BaseException {
   constructor(entity: string, identifier?: string | number) {
-    const message = identifier ? `${entity} with identifier "${identifier}" not found` : `${entity} not found`
+    const message = identifier
+      ? `${entity} with identifier "${identifier}" not found`
+      : `${entity} not found`
     super(message, HttpStatus.NOT_FOUND, 'ENTITY_NOT_FOUND')
   }
 }
@@ -94,40 +96,28 @@ export class RateLimitException extends BaseException {
   }
 }
 
-/**
- * Token expired exception
- */
-export class TokenExpiredException extends BaseException {
-  constructor(tokenType = 'Token') {
-    super(`${tokenType} has expired`, HttpStatus.UNAUTHORIZED, 'TOKEN_EXPIRED')
+export class LockTimeoutException extends BaseException {
+  constructor(message = 'Failed to acquire lock, please try again later') {
+    super(message, HttpStatus.CONFLICT, 'LOCK_TIMEOUT')
   }
 }
 
-/**
- * Invalid token exception
- */
-export class InvalidTokenException extends BaseException {
-  constructor(tokenType = 'Token') {
-    super(`${tokenType} is invalid`, HttpStatus.UNAUTHORIZED, 'INVALID_TOKEN')
+export class LockTimeoutError extends Error {
+  constructor(key: string) {
+    super(`Could not acquire lock for "${key}" within the timeout`)
+    this.name = 'LockTimeoutError'
   }
 }
 
-/**
- * Account locked exception
- */
-export class AccountLockedException extends BaseException {
-  constructor(unlockTime?: Date) {
-    super('Account is locked due to too many failed login attempts', HttpStatus.FORBIDDEN, 'ACCOUNT_LOCKED', {
-      unlockTime
-    })
+export class LockNotOwnedError extends Error {
+  constructor(key: string) {
+    super(`Cannot release lock "${key}": token mismatch (already expired or stolen)`)
+    this.name = 'LockNotOwnedError'
   }
 }
 
-/**
- * Account not verified exception
- */
-export class AccountNotVerifiedException extends BaseException {
-  constructor() {
-    super('Please verify your email address before logging in', HttpStatus.FORBIDDEN, 'ACCOUNT_NOT_VERIFIED')
+export class LockNotOwnedException extends BaseException {
+  constructor(message = 'Failed to release lock, lock not owned by requester') {
+    super(message, HttpStatus.CONFLICT, 'LOCK_NOT_OWNED')
   }
 }

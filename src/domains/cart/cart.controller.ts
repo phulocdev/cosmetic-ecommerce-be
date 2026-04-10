@@ -25,20 +25,10 @@ import { CurrentUser, AuthenticatedUser } from 'core/decorators/current-user.dec
 import { ResponseMessage } from 'core/decorators/response-message.decorator'
 import { Request, Response } from 'express'
 
-/**
- * CartController — Pure HTTP layer
- * =================================
- * Delegates ALL business logic, cookie management, and WebSocket
- * emission to CartService. Controller only handles HTTP concerns:
- * decorators, param extraction, and response passthrough.
- */
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
-  // ==========================================
-  // GET /cart — Get cart (guest or authenticated)
-  // ==========================================
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
@@ -51,9 +41,6 @@ export class CartController {
     return this.cartService.getCart(req, res, user?.id)
   }
 
-  // ==========================================
-  // POST /cart/items — Add item to cart
-  // ==========================================
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Post('items')
@@ -69,9 +56,6 @@ export class CartController {
     return this.cartService.addToCart(req, res, user?.id, addToCartDto, idempotencyKey)
   }
 
-  // ==========================================
-  // PATCH /cart/items/:item_id — Update cart item
-  // ==========================================
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Patch('items/:item_id')
@@ -85,9 +69,6 @@ export class CartController {
     return this.cartService.updateCartItem(req, user?.id, itemId, updateCartItemDto)
   }
 
-  // ==========================================
-  // DELETE /cart/items/:item_id — Remove cart item
-  // ==========================================
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Delete('items/:item_id')
@@ -101,9 +82,6 @@ export class CartController {
     return this.cartService.removeCartItem(req, user?.id, itemId, removeCartItemDto.version)
   }
 
-  // ==========================================
-  // POST /cart/items/bulk-delete — Bulk remove cart items
-  // ==========================================
   @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @Post('items/bulk-delete')
@@ -117,9 +95,6 @@ export class CartController {
     return this.cartService.bulkRemoveCartItems(req, user?.id, bulkRemoveDto)
   }
 
-  // ==========================================
-  // POST /cart/merge — Merge guest cart into user cart (on login)
-  // ==========================================
   @Post('merge')
   @ResponseMessage('Cart merged successfully')
   @HttpCode(HttpStatus.OK)
@@ -131,9 +106,6 @@ export class CartController {
     return this.cartService.mergeCart(req, res, user.id)
   }
 
-  // ==========================================
-  // GET /cart/variants/:product_id — Get product variants (for swap UI)
-  // ==========================================
   @Public()
   @Get('variants/:product_id')
   @ResponseMessage('Product variants retrieved successfully')

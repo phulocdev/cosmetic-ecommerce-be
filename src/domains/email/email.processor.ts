@@ -21,6 +21,12 @@ export class EmailProcessor {
     await this.emailService.sendPasswordResetEmail(email, resetToken)
   }
 
+  @Process('order-confirmation')
+  async handleOrderConfirmationEmail(job: Job) {
+    const { email, customerName, orderCode, totalAmount } = job.data
+    await this.emailService.sendOrderConfirmationEmail(email, customerName, orderCode, totalAmount)
+  }
+
   @OnQueueFailed()
   async onFailed(job: Job, error: Error) {
     console.error(`Job ${job.id} failed with error: ${error.message}`)
