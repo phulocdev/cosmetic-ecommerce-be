@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsBoolean, IsInt, Min, IsEnum, IsUUID } from 'class-validator'
+import { IsOptional, IsString, IsBoolean, IsInt, Min, IsEnum, IsUUID, Max } from 'class-validator'
 import { Type, Transform } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { PaginationQueryDto } from 'core'
@@ -131,6 +131,13 @@ export class GetCategoryTreeQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includeProductCount?: boolean
+
+  @IsInt({ message: 'Limit must be an integer' })
+  @Min(1, { message: 'Limit must be at least 1' })
+  @Max(100, { message: 'Limit must be at most 100' })
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number = 5
 }
 
 export class MoveCategoryDto {

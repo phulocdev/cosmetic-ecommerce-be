@@ -11,11 +11,19 @@ import {
   IsHash
 } from 'class-validator'
 
+/**
+ * Strong password regex: at least 1 uppercase, 1 lowercase, 1 digit, 1 special character
+ */
+const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+const STRONG_PASSWORD_MESSAGE =
+  'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (@$!%*?&)'
+
 export class RegisterDto {
   @IsEmail({}, { message: 'Invalid email format' })
   @IsNotEmpty({ message: 'Email is required' })
   email: string
 
+  @Matches(STRONG_PASSWORD_REGEX, { message: STRONG_PASSWORD_MESSAGE })
   @MaxLength(50, { message: 'Password must not exceed 50 characters' })
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @IsString({ message: 'Password must be a string' })
@@ -57,6 +65,7 @@ export class ChangePasswordDto {
   @IsNotEmpty({ message: 'Current password is required' })
   currentPassword: string
 
+  @Matches(STRONG_PASSWORD_REGEX, { message: STRONG_PASSWORD_MESSAGE })
   @MaxLength(50, { message: 'New password must not exceed 50 characters' })
   @MinLength(8, { message: 'New password must be at least 8 characters long' })
   @IsString({ message: 'New password must be a string' })
@@ -79,6 +88,7 @@ export class ResetPasswordDto {
   @IsNotEmpty({ message: 'Reset token is required' })
   resetToken: string
 
+  @Matches(STRONG_PASSWORD_REGEX, { message: STRONG_PASSWORD_MESSAGE })
   @MaxLength(50, { message: 'New password must not exceed 50 characters' })
   @MinLength(8, { message: 'New password must be at least 8 characters long' })
   @IsString({ message: 'New password must be a string' })

@@ -24,14 +24,6 @@ import { Request, Response } from 'express'
 
 const CART_COOKIE_NAME = 'cart_id'
 
-/**
- * CartService
- * ===========
- * Main business logic for cart operations.
- * Now also handles cookie management, WebSocket emission, and guestCartId extraction
- * to keep CartController pure.
- */
-@Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name)
   private readonly cartCookieMaxAgeMs: number

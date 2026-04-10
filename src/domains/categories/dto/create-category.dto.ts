@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
   MaxLength,
   MinLength
@@ -27,6 +28,12 @@ export class CreateCategoryDto {
   @IsString({ message: 'Slug must be a string' })
   @IsOptional({ message: 'Slug is required' })
   slug?: string
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUrl({}, { message: 'Image URL must be a valid URL' })
+  @MaxLength(500, { message: 'Image URL must be at most 500 characters' })
+  imageUrl?: string
 
   @ApiPropertyOptional({
     example: 'uuid-parent-category',

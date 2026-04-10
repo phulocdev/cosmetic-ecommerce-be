@@ -16,12 +16,10 @@ import { BrandsModule } from './domains/brands/brands.module'
 import { CollectionsModule } from './domains/collections/collections.module'
 import { CountryOfOriginModule } from './domains/country-of-origin/country-of-origin.module'
 import { UploadModule } from './domains/upload/upload.module'
-<<<<<<< Updated upstream
-=======
-import { CartModule } from './domains/cart/cart.module';
-import { OrdersModule } from './domains/orders/orders.module';
-import { PaymentModule } from './domains/payment/payment.module';
->>>>>>> Stashed changes
+import { CartModule } from './domains/cart/cart.module'
+import { OrdersModule } from './domains/orders/orders.module'
+import { PaymentModule } from './domains/payment/payment.module'
+
 @Module({
   imports: [
     // Core Modules
@@ -55,14 +53,10 @@ import { PaymentModule } from './domains/payment/payment.module';
     CountryOfOriginModule,
     AttributesModule,
     UploadModule,
-<<<<<<< Updated upstream
-    CollectionsModule
-=======
     CollectionsModule,
     CartModule,
     OrdersModule,
     PaymentModule
->>>>>>> Stashed changes
   ],
   controllers: [AppController],
   providers: [AppService]

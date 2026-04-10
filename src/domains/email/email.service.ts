@@ -24,7 +24,7 @@ export class EmailService {
       ResetPasswordTemplate({
         name,
         resetToken,
-        clientBaseUrl: this.configService.get('CLIENT_BASE_URL')
+        clientBaseUrl: this.configService.get('CLIENT_APP_URL')
       }),
       {
         pretty: this.configService.get('NODE_ENV') !== 'production' // Makes HTML readable (disable in production)
