@@ -47,3 +47,28 @@ export enum ProductStatus {
   DRAFT = 'DRAFT',
   ARCHIVED = 'ARCHIVED'
 }
+
+export enum OrderStatus {
+  PROCESSING = 'PROCESSING',
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
+  PAID = 'PAID',
+  PACKED = 'PACKED',
+  READY_TO_SHIP = 'READY_TO_SHIP',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  RETURNED = 'RETURNED'
+}
+
+export enum PaymentMethod {
+  COD = 'COD',
+  BANKING = 'BANKING'
+}
+
+export enum OrderSortBy {
+  CREATED_AT = 'createdAt',
+  TOTAL_PRICE = 'totalPrice',
+  STATUS = 'status',
+  CODE = 'code'
+}

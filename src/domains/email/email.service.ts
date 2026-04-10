@@ -4,6 +4,7 @@ import { render } from '@react-email/render'
 import { ConfigService } from '@nestjs/config'
 import WelcomeEmail from '../../emails/welcome'
 import ResetPasswordTemplate from '../../emails/reset-password-template'
+import OrderConfirmationEmail from '../../emails/order-confirmation'
 
 @Injectable()
 export class EmailService {
@@ -65,6 +66,37 @@ export class EmailService {
       })
       .catch((err) => {
         console.error('Error sending welcome email:', err)
+        throw err
+      })
+  }
+
+  async renderOrderConfirmationEmail(
+    customerName: string,
+    orderCode: string,
+    totalAmount: number
+  ): Promise<string> {
+    return render(
+      OrderConfirmationEmail({ customerName, orderCode, totalAmount }),
+      {
+        pretty: this.configService.get('NODE_ENV') !== 'production'
+      }
+    )
+  }
+
+  async sendOrderConfirmationEmail(
+    email: string,
+    customerName: string,
+    orderCode: string,
+    totalAmount: number
+  ) {
+    await this.mailerService
+      .sendMail({
+        to: email,
+        subject: `Xác nhận đơn hàng #${orderCode}`,
+        html: await this.renderOrderConfirmationEmail(customerName, orderCode, totalAmount)
+      })
+      .catch((err) => {
+        console.error('Error sending order confirmation email:', err)
         throw err
       })
   }

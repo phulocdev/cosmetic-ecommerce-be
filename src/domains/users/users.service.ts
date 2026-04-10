@@ -30,7 +30,7 @@ export class UsersService {
     // find user by email, code or phone number to prevent duplicate
     const existingUser = await this.prismaService.user.findFirst({
       where: {
-        OR: [{ email }, { code }, { phoneNumber }]
+        OR: [{ email }, { code }, ...(phoneNumber ? [{ phoneNumber }] : [])]
       }
     })
 
@@ -38,7 +38,7 @@ export class UsersService {
       throw new BadRequestException('User with the same email, code or phone number already exists')
     }
 
-    const hashedPassword = await this.hashPassword(password)
+    const hashedPassword = password ? await this.hashPassword(password) : null
     const userCode = code || generateUserCode()
 
     return this.prismaService.user.create({
@@ -129,6 +129,36 @@ export class UsersService {
   async findByGoogleId(googleId: string): Promise<User | null> {
     return this.prismaService.user.findFirst({
       where: { googleId }
+    })
+  }
+
+  /**
+   * Find or create a guest user by email.
+   * Guest users have no password — they can later register to claim their account.
+   */
+  async findOrCreateGuestUser(
+    email: string,
+    fullName: string,
+    phoneNumber: string
+  ): Promise<User> {
+    // Try to find existing user by email
+    const existingUser = await this.findByEmail(email)
+    if (existingUser) {
+      return existingUser
+    }
+
+    // Create a new guest user (no password)
+    const userCode = generateUserCode()
+    return this.prismaService.user.create({
+      data: {
+        email,
+        fullName,
+        phoneNumber,
+        password: null,
+        role: UserRole.CUSTOMER,
+        code: userCode,
+        isActive: true
+      }
     })
   }
 }

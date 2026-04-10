@@ -1,3 +1,5 @@
+import slugify from 'slugify'
+
 export function generateProductCode(productName: string): string {
   const clean = productName
     .toUpperCase()
@@ -46,13 +48,8 @@ export function generateVariantSku(
   return `${productCode}-${attributePart}`
 }
 
-export function slugifyString(str: string): string {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+export function slugifyString(text: string): string {
+  return slugify(text, { lower: true, strict: true })
 }
 
 export function generateUserCode(): string {

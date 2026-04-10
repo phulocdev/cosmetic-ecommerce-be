@@ -11,7 +11,7 @@ export class AppController {
 
   @Public()
   @Get()
-  getHello() {
+  async getHello() {
     this.logger.log('Hello endpoint called')
     return this.appService.getHello()
   }

@@ -47,6 +47,51 @@ export class AuthService {
     })
 
     if (existingUser) {
+      // Allow guest users (no password) to claim their account
+      if (!existingUser.password) {
+        const hashedPassword = await this.hashPassword(registerDto.password)
+        const updatedUser = await this.prismaService.user.update({
+          where: { id: existingUser.id },
+          data: {
+            password: hashedPassword,
+            fullName: registerDto.fullName || existingUser.fullName,
+            phoneNumber: registerDto.phoneNumber || existingUser.phoneNumber
+          }
+        })
+
+        // Generate tokens for the claimed account
+        const tokenVersion = Number(await this.getTokenVersion(updatedUser.id)) + 0
+        const accessTokenJti = uuidv4()
+        const refreshTokenJti = uuidv4()
+
+        const accessTokenPayload: AccessTokenPayload = {
+          userId: updatedUser.id,
+          jti: accessTokenJti,
+          email: updatedUser.email,
+          role: updatedUser.role as UserRole,
+          version: tokenVersion
+        }
+        const refreshTokenPayload: RefreshTokenPayload = {
+          userId: updatedUser.id,
+          jti: refreshTokenJti,
+          email: updatedUser.email,
+          role: updatedUser.role as UserRole
+        }
+
+        const [accessToken, refreshToken] = await Promise.all([
+          this.signAccessToken(accessTokenPayload),
+          this.signRefreshToken(refreshTokenPayload)
+        ])
+
+        await this.createRefreshTokenRecord(refreshTokenJti, updatedUser.id, hashToken(refreshToken))
+
+        return {
+          user: this.sanitizeUser(updatedUser),
+          accessToken,
+          refreshToken
+        }
+      }
+
       throw new BadRequestException('Email already exists')
     }
 
@@ -120,6 +165,11 @@ export class AuthService {
         await this.recordFailedLogin(loginDto.email, ipAddress)
       }
       throw new BadRequestException('Email/Password không chính xác')
+    }
+
+    // Guest user without password — must register first
+    if (!user.password) {
+      throw new BadRequestException('Tài khoản chưa đặt mật khẩu. Vui lòng đăng ký để thiết lập mật khẩu.')
     }
 
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password)

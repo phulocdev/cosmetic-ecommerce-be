@@ -19,4 +19,18 @@ export class EmailProducer {
       resetToken
     })
   }
+
+  async sendOrderConfirmationEmail(
+    email: string,
+    customerName: string,
+    orderCode: string,
+    totalAmount: number
+  ) {
+    await this.emailQueue.add('order-confirmation', {
+      email,
+      customerName,
+      orderCode,
+      totalAmount
+    })
+  }
 }

@@ -15,12 +15,14 @@ import {
 } from 'config'
 import { HttpExceptionFilter } from 'core/filters'
 import { JwtAuthGuard } from 'core/guards/jwt-auth.guard'
+import { RolesGuard } from 'core/guards/roles.guard'
 import { LoggingInterceptor, TimeoutInterceptor, TransformInterceptor } from 'core/interceptors'
 import { extractErrorMessageFromDto } from 'utils'
 import { validationSchema } from '../config/validation.schema'
 import { EventEmitterModule } from '@nestjs/event-emitter'
 import { ScheduleModule } from '@nestjs/schedule'
 import { TerminusModule } from '@nestjs/terminus'
+import { RedisLockModule } from './redis-lock/redis-lock.module';
 
 @Module({
   imports: [
@@ -70,12 +72,18 @@ import { TerminusModule } from '@nestjs/terminus'
     }),
 
     // Health Checks
-    TerminusModule
+    TerminusModule,
+
+    RedisLockModule
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard
     },
     {
       provide: APP_INTERCEPTOR,
